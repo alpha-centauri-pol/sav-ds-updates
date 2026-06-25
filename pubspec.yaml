@@ -66,6 +66,9 @@ flutter:
         - asset: assets/fonts/DMSans[opsz,wght].ttf
         - asset: assets/fonts/DMSans-Italic[opsz,wght].ttf
           style: italic
+    - family: Obviously
+      fonts:
+        - asset: assets/fonts/ObviouslyNarrow-Semibold.otf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

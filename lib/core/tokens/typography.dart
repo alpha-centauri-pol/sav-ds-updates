@@ -39,9 +39,18 @@ abstract final class AppTextStyles {
   static final bodyBold      = _dm(14, 500, 1.25); // ← Button label (Body/Bold)
   static final calloutRegular = _dm(16, 400, 1.25);
   static final calloutBold   = _dm(16, 500, 1.25);
-  static final calloutCta    = _dm(16, 500, 1.25);
-  static final calloutCta550 = _dm(16, 550, 1.25);
+  static final calloutCta    = _dm(16, 550, 1.25);
   static final captionRegular = _dm(12, 400, 1.20);
+  static final caption450    = _dm(12, 450, 1.20);
+  static final caption550    = _dm(12, 550, 1.20);
+  static TextStyle chipLabel(double size) => _dm(size, 500, 1.20);
+
+  // — Obviously Narrow Semibold (font registered in pubspec) ————————
+  static const obviouslyNarrow = TextStyle(
+    fontFamily: _obviously,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+  );
 
   // — Obviously (font not yet bundled — see class doc) ————————
   static const titleLargerText   = TextStyle(fontFamily: _obviously, fontSize: 48, height: 1.20, letterSpacing: 0);

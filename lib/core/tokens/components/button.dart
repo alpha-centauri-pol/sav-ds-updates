@@ -49,7 +49,7 @@ class AppButtonSizeTokens {
             paddingY: 14.0,
             gap: 8.0,
             iconSize: 20.0,
-            textStyle: AppTextStyles.calloutCta550,
+            textStyle: AppTextStyles.calloutCta,
           ),
       };
 }
@@ -124,7 +124,7 @@ class AppButtonStyleTokens {
           labelColor: const Color(0xCC1F1F1F), // #1f1f1fcc (darkTransparent80)
           bgGradient: null,
           fillColor: AppColors.white,
-          strokeColor: const Color(0xFFE6E6E9),
+          strokeColor: AppColors.hairline,
           strokeWidth: 1.0,
           strokeGradient: null,
           hasSecondaryDecoration: true,

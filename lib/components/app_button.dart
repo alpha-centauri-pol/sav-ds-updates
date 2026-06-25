@@ -1,9 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/services.dart';
 import '../core/squircle.dart';
 import '../core/tokens.dart';
 import '../core/noise.dart';
+import '../dev/global_config.dart';
+import 'morphing_text.dart';
 
 class AppButton extends StatefulWidget {
   const AppButton({
@@ -44,23 +47,31 @@ class _AppButtonState extends State<AppButton>
   late final AnimationController _controller =
       AnimationController.unbounded(vsync: this);
 
-  static const _tapDownScale = 0.98;
+  static const _tapDownScale = 0.94;
   static const _tapUpScale = 1.0;
   static const _scaleDelta = _tapDownScale - _tapUpScale;
-  static const _spring = SpringDescription(
-    mass: 1,
-    stiffness: 300,
-    damping: 20,
-  );
 
   bool get _enabled => widget.onPressed != null && widget.state == AppButtonState.normal;
   bool get _loading => widget.state == AppButtonState.loading;
 
-  void _press(_) => _controller.animateWith(SpringSimulation(
-      _spring, _controller.value, 1.0, _controller.velocity));
+  void _press(_) {
+    if (AppMotion.reduce(context)) {
+      _controller.value = 1.0;
+    } else {
+      _controller.animateWith(SpringSimulation(
+          AppMotion.springInteractive, _controller.value, 1.0, _controller.velocity));
+    }
+    HapticFeedback.lightImpact();
+  }
 
-  void _release([_]) => _controller.animateWith(SpringSimulation(
-      _spring, _controller.value, 0.0, _controller.velocity));
+  void _release([_]) {
+    if (AppMotion.reduce(context)) {
+      _controller.value = 0.0;
+    } else {
+      _controller.animateWith(SpringSimulation(
+          AppMotion.springInteractive, _controller.value, 0.0, _controller.velocity));
+    }
+  }
 
   @override
   void dispose() {
@@ -116,8 +127,8 @@ class _AppButtonState extends State<AppButton>
         Padding(
           padding: const EdgeInsets.symmetric(
               horizontal: AppButtonTokens.labelInsetX),
-          child: Text(
-            widget.label,
+          child: MorphingText(
+            text: widget.label,
             style: sizeTokens.textStyle.copyWith(color: textIconColor),
           ),
         ),
@@ -135,7 +146,13 @@ class _AppButtonState extends State<AppButton>
     if (widget.variant == AppButtonVariant.inline && widget.labelColor == null) {
       buttonContent = ShaderMask(
         shaderCallback: (bounds) => const LinearGradient(
-          colors: [Color(0xFF1F3822), Color(0xFF437A61), Color(0xFF5B9A74)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.lushCapital800,
+            AppColors.lushCapital600,
+            AppColors.lushCapital500,
+          ],
         ).createShader(bounds),
         child: rowWidget,
       );
@@ -144,23 +161,28 @@ class _AppButtonState extends State<AppButton>
     }
 
     final Decoration decoration = switch (widget.variant) {
-      AppButtonVariant.primary => ShapeDecoration(
-          shape: SquircleBorder(
-            curvature: style.curvature,
-            strokeWidth: style.strokeWidth,
-            strokeGradient: resolvedStrokeColor != null
-                ? LinearGradient(colors: [resolvedStrokeColor, resolvedStrokeColor])
-                : (style.strokeGradient ?? AppButtonTokens.primaryStrokeGradient),
-          ),
-          gradient: resolvedFillColor != null ? null : style.bgGradient,
-          color: resolvedFillColor,
+      AppButtonVariant.primary => SavSurface(
+          curvature: style.curvature,
+          fillColor: resolvedFillColor,
+          fillGradient: resolvedFillColor != null ? null : style.bgGradient,
+          strokeWidth: style.strokeWidth,
+          strokeGradient: resolvedStrokeColor != null
+              ? LinearGradient(colors: [resolvedStrokeColor, resolvedStrokeColor])
+              : (style.strokeGradient ?? AppButtonTokens.primaryStrokeGradient),
+          strokeSoftLight: true,
           shadows: style.shadows,
         ),
-      AppButtonVariant.secondary => SecondaryDecoration(
+      AppButtonVariant.secondary => SavSurface(
           curvature: style.curvature,
           fillColor: resolvedFillColor ?? Colors.white,
-          strokeColor: resolvedStrokeColor ?? const Color(0xFFE6E6E9),
+          strokeColor: resolvedStrokeColor ?? AppColors.hairline,
           strokeWidth: style.strokeWidth,
+          dropShadowColor: const Color(0x0A1F1F1F),
+          dropShadowOffset: const Offset(1, 1),
+          dropShadowBlur: 1.5,
+          innerShadowColor: const Color(0x0F1F1F1F),
+          innerShadowOffset: const Offset(-1, -1),
+          innerShadowBlur: 1.5,
         ),
       AppButtonVariant.inline => const BoxDecoration(color: Colors.transparent),
     };
@@ -181,28 +203,36 @@ class _AppButtonState extends State<AppButton>
                 horizontal: isIconOnly ? 0 : sizeTokens.paddingX,
                 vertical: sizeTokens.paddingY,
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Visibility(
-                    visible: !_loading,
-                    maintainSize: true,
-                    maintainAnimation: true,
-                    maintainState: true,
-                    child: isIconOnly
-                        ? Center(child: _iconSlot(widget.leading, sizeTokens.iconSize, textIconColor))
-                        : buttonContent,
-                  ),
-                  if (_loading)
-                    SizedBox(
-                      width: sizeTokens.iconSize,
-                      height: sizeTokens.iconSize,
-                      child: CupertinoActivityIndicator(
-                        radius: sizeTokens.iconSize / 2,
-                        color: resolvedLabelColor,
-                      ),
+              child: AnimatedSwitcher(
+                duration: AppMotion.duration(context, AppMotion.durationHigh),
+                switchInCurve: AppMotion.curveOut,
+                switchOutCurve: AppMotion.curveGentleOut,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  final bool isEntering = child.key == const ValueKey('loading');
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: isEntering ? 0.8 : 0.9, end: 1.0).animate(animation),
+                      child: child,
                     ),
-                ],
+                  );
+                },
+                child: _loading
+                    ? SizedBox(
+                        key: const ValueKey('loading'),
+                        width: sizeTokens.iconSize,
+                        height: sizeTokens.iconSize,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: resolvedLabelColor,
+                        ),
+                      )
+                    : SizedBox(
+                        key: const ValueKey('content'),
+                        child: isIconOnly
+                            ? Center(child: _iconSlot(widget.leading, sizeTokens.iconSize, textIconColor))
+                            : buttonContent,
+                      ),
               ),
             ),
           ),
@@ -226,16 +256,50 @@ class _AppButtonState extends State<AppButton>
     );
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTapDown: _enabled ? _press : null,
       onTapUp: _enabled ? _release : null,
       onTapCancel: _enabled ? _release : null,
       onTap: _enabled ? widget.onPressed : null,
       child: AnimatedBuilder(
         animation: _controller,
-        builder: (context, child) => Transform.scale(
-          scale: _tapUpScale + _scaleDelta * _controller.value,
-          child: child,
-        ),
+        builder: (context, child) {
+          final scale = _tapUpScale + (_scaleDelta * _controller.value * GlobalConfig.pressSensitivity.value);
+          Widget current = Transform.scale(
+            scale: scale,
+            child: child,
+          );
+          if (widget.variant == AppButtonVariant.inline) {
+            current = Opacity(
+              opacity: (1.0 - (0.3 * _controller.value)).clamp(0.0, 1.0),
+              child: current,
+            );
+          } else {
+            current = Stack(
+              alignment: Alignment.center,
+              children: [
+                current,
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: ShapeDecoration(
+                        shape: SquircleBorder(
+                          curvature: style.curvature,
+                          strokeWidth: 0,
+                          strokeGradient: const LinearGradient(
+                            colors: [Colors.transparent, Colors.transparent],
+                          ),
+                        ),
+                        color: Colors.black.withOpacity((0.08 * _controller.value).clamp(0.0, 1.0)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+          return current;
+        },
         child: opacityWidget,
       ),
     );

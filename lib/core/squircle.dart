@@ -116,29 +116,87 @@ class SquircleBorder extends OutlinedBorder {
       );
 }
 
-class SecondaryDecoration extends Decoration {
-  const SecondaryDecoration({
-    required this.curvature,
-    required this.fillColor,
-    required this.strokeColor,
-    required this.strokeWidth,
+class SavSurface extends Decoration {
+  const SavSurface({
+    this.curvature = 10,
+    this.fillColor,
+    this.fillGradient,
+    this.shadows,
+    this.dropShadowColor,
+    this.dropShadowOffset,
+    this.dropShadowBlur,
+    this.innerShadowColor,
+    this.innerShadowOffset,
+    this.innerShadowBlur,
+    this.strokeColor,
+    this.strokeWidth = 0.0,
+    this.strokeGradient,
+    this.strokeSoftLight = false,
   });
 
   final int curvature;
-  final Color fillColor;
-  final Color strokeColor;
+  final Color? fillColor;
+  final Gradient? fillGradient;
+  final List<BoxShadow>? shadows;
+  final Color? dropShadowColor;
+  final Offset? dropShadowOffset;
+  final double? dropShadowBlur;
+  final Color? innerShadowColor;
+  final Offset? innerShadowOffset;
+  final double? innerShadowBlur;
+  final Color? strokeColor;
   final double strokeWidth;
+  final Gradient? strokeGradient;
+  final bool strokeSoftLight;
+
+  @override
+  Decoration? lerpFrom(Decoration? a, double t) {
+    if (a is SavSurface) {
+      return SavSurface.lerp(a, this, t);
+    }
+    return super.lerpFrom(a, t);
+  }
+
+  @override
+  Decoration? lerpTo(Decoration? b, double t) {
+    if (b is SavSurface) {
+      return SavSurface.lerp(this, b, t);
+    }
+    return super.lerpTo(b, t);
+  }
+
+  static SavSurface? lerp(SavSurface? a, SavSurface? b, double t) {
+    if (a == null && b == null) return null;
+    if (a == null) return b;
+    if (b == null) return a;
+    return SavSurface(
+      curvature: t < 0.5 ? a.curvature : b.curvature,
+      fillColor: Color.lerp(a.fillColor, b.fillColor, t),
+      fillGradient: Gradient.lerp(a.fillGradient, b.fillGradient, t),
+      shadows: t < 0.5 ? a.shadows : b.shadows,
+      dropShadowColor: Color.lerp(a.dropShadowColor, b.dropShadowColor, t),
+      dropShadowOffset: Offset.lerp(a.dropShadowOffset, b.dropShadowOffset, t),
+      dropShadowBlur: ui.lerpDouble(a.dropShadowBlur, b.dropShadowBlur, t),
+      innerShadowColor: Color.lerp(a.innerShadowColor, b.innerShadowColor, t),
+      innerShadowOffset: Offset.lerp(a.innerShadowOffset, b.innerShadowOffset, t),
+      innerShadowBlur: ui.lerpDouble(a.innerShadowBlur, b.innerShadowBlur, t),
+      strokeColor: Color.lerp(a.strokeColor, b.strokeColor, t),
+      strokeWidth: ui.lerpDouble(a.strokeWidth, b.strokeWidth, t) ?? 0.0,
+      strokeGradient: Gradient.lerp(a.strokeGradient, b.strokeGradient, t),
+      strokeSoftLight: t < 0.5 ? a.strokeSoftLight : b.strokeSoftLight,
+    );
+  }
 
   @override
   BoxPainter createBoxPainter([VoidCallback? onChanged]) {
-    return _SecondaryBoxPainter(this, onChanged);
+    return _SavSurfacePainter(this, onChanged);
   }
 }
 
-class _SecondaryBoxPainter extends BoxPainter {
-  _SecondaryBoxPainter(this.decoration, VoidCallback? onChanged) : super(onChanged);
+class _SavSurfacePainter extends BoxPainter {
+  _SavSurfacePainter(this.decoration, VoidCallback? onChanged) : super(onChanged);
 
-  final SecondaryDecoration decoration;
+  final SavSurface decoration;
 
   @override
   void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
@@ -146,41 +204,73 @@ class _SecondaryBoxPainter extends BoxPainter {
     final rect = offset & size;
     final c = decoration.curvature;
 
-    // 1. Drop shadow: offset(1, 1), blur 2.0 (maskFilter blur radius of ~1.5)
-    // Figma color: #1F1F1F @ 4% (#1F1F1F0A)
-    final shadowPaint = Paint()
-      ..color = const Color(0x0A1F1F1F)
-      ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 1.5);
-    canvas.drawPath(
-      squirclePath(rect.shift(const Offset(1, 1)), c),
-      shadowPaint,
-    );
+    // 1. Drop shadow
+    if (decoration.shadows != null) {
+      for (final shadow in decoration.shadows!) {
+        final shadowRect = rect.shift(shadow.offset).inflate(shadow.spreadRadius);
+        final shadowPaint = Paint()
+          ..color = shadow.color
+          ..maskFilter = shadow.blurRadius > 0
+              ? ui.MaskFilter.blur(ui.BlurStyle.normal, shadow.blurRadius)
+              : null;
+        canvas.drawPath(
+          squirclePath(shadowRect, c),
+          shadowPaint,
+        );
+      }
+    } else if (decoration.dropShadowColor != null &&
+        decoration.dropShadowOffset != null &&
+        decoration.dropShadowBlur != null) {
+      final shadowPaint = Paint()
+        ..color = decoration.dropShadowColor!
+        ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, decoration.dropShadowBlur!);
+      canvas.drawPath(
+        squirclePath(rect.shift(decoration.dropShadowOffset!), c),
+        shadowPaint,
+      );
+    }
 
-    // 2. Fill
-    final fillPaint = Paint()
-      ..color = decoration.fillColor
-      ..style = PaintingStyle.fill;
+    // 2. Fill (color or gradient)
+    final fillPaint = Paint()..style = PaintingStyle.fill;
+    if (decoration.fillGradient != null) {
+      fillPaint.shader = decoration.fillGradient!.createShader(rect);
+    } else if (decoration.fillColor != null) {
+      fillPaint.color = decoration.fillColor!;
+    } else {
+      fillPaint.color = Colors.transparent;
+    }
     canvas.drawPath(squirclePath(rect, c), fillPaint);
 
-    // 3. Inner shadow: offset(-1, -1), blur 2.0. Figma color: #1F1F1F @ 6% (#1F1F1F0F)
-    canvas.save();
-    canvas.clipPath(squirclePath(rect, c));
-    final outerRect = rect.inflate(10.0);
-    final outerPath = Path()..addRect(outerRect);
-    final offsetPath = squirclePath(rect.shift(const Offset(-1, -1)), c);
-    final innerShadowPath = Path.combine(PathOperation.difference, outerPath, offsetPath);
-    final innerShadowPaint = Paint()
-      ..color = const Color(0x0F1F1F1F)
-      ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 1.5);
-    canvas.drawPath(innerShadowPath, innerShadowPaint);
-    canvas.restore();
+    // 3. Inner shadow
+    if (decoration.innerShadowColor != null &&
+        decoration.innerShadowOffset != null &&
+        decoration.innerShadowBlur != null) {
+      canvas.save();
+      canvas.clipPath(squirclePath(rect, c));
+      final outerRect = rect.inflate(10.0);
+      final outerPath = Path()..addRect(outerRect);
+      final offsetPath = squirclePath(rect.shift(decoration.innerShadowOffset!), c);
+      final innerShadowPath = Path.combine(PathOperation.difference, outerPath, offsetPath);
+      final innerShadowPaint = Paint()
+        ..color = decoration.innerShadowColor!
+        ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, decoration.innerShadowBlur!);
+      canvas.drawPath(innerShadowPath, innerShadowPaint);
+      canvas.restore();
+    }
 
-    // 4. Hairline stroke
-    if (decoration.strokeWidth > 0) {
+    // 4. Stroke / Border (solid or gradient, optionally soft light)
+    if (decoration.strokeWidth > 0 && (decoration.strokeColor != null || decoration.strokeGradient != null)) {
       final strokePaint = Paint()
-        ..color = decoration.strokeColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = decoration.strokeWidth;
+      if (decoration.strokeSoftLight) {
+        strokePaint.blendMode = BlendMode.softLight;
+      }
+      if (decoration.strokeGradient != null) {
+        strokePaint.shader = decoration.strokeGradient!.createShader(rect);
+      } else if (decoration.strokeColor != null) {
+        strokePaint.color = decoration.strokeColor!;
+      }
       canvas.drawPath(squirclePath(rect.deflate(decoration.strokeWidth / 2), c), strokePaint);
     }
   }

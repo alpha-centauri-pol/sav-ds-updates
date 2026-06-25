@@ -26,10 +26,9 @@ abstract final class AppColors {
   static const transparent60 = Color(0x991F1F1F); // 0.60
   static const transparent80 = Color(0xCC1F1F1F); // 0.80
 
-  // — Sav Transparent Light / Dark Overlay ——————————————
+  // — Sav Transparent Light Overlay ——————————————
   static const lightTransparent40 = Color(0x66FFFFFF); // #ffffff66
   static const lightTransparent80 = Color(0xCCFFFFFF); // #ffffffcc
-  static const darkTransparent80  = Color(0xCC1F1F1F); // #1f1f1fcc
 
   // — Wealth Weave (blue) ————————————————————————————————
   static const wealthWeave100 = Color(0xFFF2F6FC);
@@ -79,4 +78,18 @@ abstract final class AppColors {
   static const bronzeBounty600 = Color(0xFF935629);
   static const bronzeBounty700 = Color(0xFF542B0D);
   static const bronzeBounty800 = Color(0xFF331704);
+
+  // — Dark Transparent Overlays —————————————————————————
+  static const darkTransparent4  = Color(0x0A1F1F1F); // #1f1f1f0a
+  static const darkTransparent40 = Color(0x661F1F1F); // #1f1f1f66
+  static const darkTransparent60 = Color(0x991F1F1F); // #1f1f1f99
+  static const darkTransparent80 = Color(0xCC1F1F1F); // #1f1f1fcc
+
+  // — Semantic Intent Colors ————————————————————————————
+  static const neutral = obsidian;
+  static const positive = Color(0xFF437A61); // lushCapital600
+  static const negative = Color(0xFF935629); // bronzeBounty600 (bronze error)
+  static const info = Color(0xFF2E79DC); // wealthWeave600
+  static const bronzeError = Color(0xFF935629); // bronzeBounty600
+  static const hairline = Color(0xFFE6E6E9);
 }

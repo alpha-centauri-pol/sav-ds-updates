@@ -1,11 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+
+import '../core/noise.dart';
 import '../core/squircle.dart';
 import '../core/tokens.dart';
-import '../core/noise.dart';
-import '../dev/global_config.dart';
+import 'internal/disabled_fade.dart';
 import 'morphing_text.dart';
 
 class AppButton extends StatefulWidget {
@@ -23,6 +23,7 @@ class AppButton extends StatefulWidget {
     this.fillColor,
     this.labelColor,
     this.strokeColor,
+    this.textStyle,
   });
 
   final String label;
@@ -37,6 +38,7 @@ class AppButton extends StatefulWidget {
   final Color? fillColor;
   final Color? labelColor;
   final Color? strokeColor;
+  final TextStyle? textStyle;
 
   @override
   State<AppButton> createState() => _AppButtonState();
@@ -44,22 +46,30 @@ class AppButton extends StatefulWidget {
 
 class _AppButtonState extends State<AppButton>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController.unbounded(vsync: this);
+  late final AnimationController _controller = AnimationController.unbounded(
+    vsync: this,
+  );
 
   static const _tapDownScale = 0.94;
   static const _tapUpScale = 1.0;
-  static const _scaleDelta = _tapDownScale - _tapUpScale;
+  static const double _scaleDelta = _tapDownScale - _tapUpScale;
 
-  bool get _enabled => widget.onPressed != null && widget.state == AppButtonState.normal;
+  bool get _enabled =>
+      widget.onPressed != null && widget.state == AppButtonState.normal;
   bool get _loading => widget.state == AppButtonState.loading;
 
   void _press(_) {
     if (AppMotion.reduce(context)) {
       _controller.value = 1.0;
     } else {
-      _controller.animateWith(SpringSimulation(
-          AppMotion.springInteractive, _controller.value, 1.0, _controller.velocity));
+      _controller.animateWith(
+        SpringSimulation(
+          AppMotion.springInteractive,
+          _controller.value,
+          1,
+          _controller.velocity,
+        ),
+      );
     }
     HapticFeedback.lightImpact();
   }
@@ -68,8 +78,14 @@ class _AppButtonState extends State<AppButton>
     if (AppMotion.reduce(context)) {
       _controller.value = 0.0;
     } else {
-      _controller.animateWith(SpringSimulation(
-          AppMotion.springInteractive, _controller.value, 0.0, _controller.velocity));
+      _controller.animateWith(
+        SpringSimulation(
+          AppMotion.springInteractive,
+          _controller.value,
+          0,
+          _controller.velocity,
+        ),
+      );
     }
   }
 
@@ -80,71 +96,61 @@ class _AppButtonState extends State<AppButton>
   }
 
   Widget _defaultGlyph(double size, Color color) => Icon(
-        Icons.star_border_rounded,
-        size: size,
-        color: color,
-      );
+    Icons.star_border_rounded,
+    size: size,
+    color: color,
+  );
 
   Widget _iconSlot(Widget? provided, double size, Color color) => SizedBox(
-        width: size,
-        height: size,
-        child: Center(
-          child: IconTheme(
-            data: IconThemeData(size: size, color: color),
-            child: provided ?? _defaultGlyph(size, color),
-          ),
-        ),
-      );
+    width: size,
+    height: size,
+    child: Center(
+      child: IconTheme(
+        data: IconThemeData(size: size, color: color),
+        child: provided ?? _defaultGlyph(size, color),
+      ),
+    ),
+  );
 
-  @override
-  Widget build(BuildContext context) {
-    final sizeTokens = AppButtonSizeTokens.resolve(widget.size);
-    final style = AppButtonStyleTokens.resolve(widget.variant, widget.size);
-
-    final resolvedFillColor = widget.fillColor ?? style.fillColor;
-    final resolvedLabelColor = widget.labelColor ?? style.labelColor;
-    final resolvedStrokeColor = widget.strokeColor ?? style.strokeColor;
-
-    final bool isIconOnly = widget.icon == AppButtonIcon.iconOnly;
-    final double? buttonWidth = switch (widget.width) {
-      AppButtonWidth.full => double.infinity,
-      AppButtonWidth.half => null,
-      AppButtonWidth.hug => isIconOnly ? sizeTokens.height : null,
-    };
-
-    final bool showLeading = widget.icon == AppButtonIcon.leading;
-    final bool showTrailing = widget.icon == AppButtonIcon.trailing;
-    final bool showLabel = widget.icon != AppButtonIcon.iconOnly;
-
-    // Use white color as base for gradient ShaderMask to blend correctly
-    final Color textIconColor = (widget.variant == AppButtonVariant.inline && widget.labelColor == null)
-        ? Colors.white
-        : resolvedLabelColor;
+  Widget _buildContent(
+    AppButtonSizeTokens sizeTokens,
+    AppButtonStyleTokens style,
+    Color textIconColor,
+  ) {
+    final isIconOnly = widget.icon == AppButtonIcon.iconOnly;
+    final showLeading = widget.icon == AppButtonIcon.leading;
+    final showTrailing = widget.icon == AppButtonIcon.trailing;
+    final showLabel = widget.icon != AppButtonIcon.iconOnly;
 
     final content = <Widget>[
-      if (showLeading) _iconSlot(widget.leading, sizeTokens.iconSize, textIconColor),
+      if (showLeading)
+        _iconSlot(widget.leading, sizeTokens.iconSize, textIconColor),
       if (showLabel)
         Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppButtonTokens.labelInsetX),
+            horizontal: AppButtonTokens.labelInsetX,
+          ),
           child: MorphingText(
             text: widget.label,
-            style: sizeTokens.textStyle.copyWith(color: textIconColor),
+            style: (widget.textStyle ?? sizeTokens.textStyle).copyWith(color: textIconColor),
           ),
         ),
-      if (showTrailing) _iconSlot(widget.trailing, sizeTokens.iconSize, textIconColor),
+      if (showTrailing)
+        _iconSlot(widget.trailing, sizeTokens.iconSize, textIconColor),
     ];
 
     final Widget rowWidget = Row(
-      mainAxisSize: (widget.width == AppButtonWidth.full && !isIconOnly) ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisSize: (widget.width == AppButtonWidth.full && !isIconOnly)
+          ? MainAxisSize.max
+          : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       spacing: sizeTokens.gap,
       children: content,
     );
 
-    final Widget buttonContent;
-    if (widget.variant == AppButtonVariant.inline && widget.labelColor == null) {
-      buttonContent = ShaderMask(
+    if (widget.variant == AppButtonVariant.inline &&
+        widget.labelColor == null) {
+      return ShaderMask(
         shaderCallback: (bounds) => const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -156,38 +162,54 @@ class _AppButtonState extends State<AppButton>
         ).createShader(bounds),
         child: rowWidget,
       );
-    } else {
-      buttonContent = rowWidget;
     }
+    return rowWidget;
+  }
 
-    final Decoration decoration = switch (widget.variant) {
+  Decoration _buildDecoration(
+    AppButtonStyleTokens style,
+    Color? resolvedFillColor,
+    Color? resolvedStrokeColor,
+  ) {
+    return switch (widget.variant) {
       AppButtonVariant.primary => SavSurface(
-          curvature: style.curvature,
-          fillColor: resolvedFillColor,
-          fillGradient: resolvedFillColor != null ? null : style.bgGradient,
-          strokeWidth: style.strokeWidth,
-          strokeGradient: resolvedStrokeColor != null
-              ? LinearGradient(colors: [resolvedStrokeColor, resolvedStrokeColor])
-              : (style.strokeGradient ?? AppButtonTokens.primaryStrokeGradient),
-          strokeSoftLight: true,
-          shadows: style.shadows,
-        ),
+        curvature: style.curvature,
+        fillColor: resolvedFillColor,
+        fillGradient: resolvedFillColor != null ? null : style.bgGradient,
+        strokeWidth: style.strokeWidth,
+        strokeGradient: resolvedStrokeColor != null
+            ? LinearGradient(colors: [resolvedStrokeColor, resolvedStrokeColor])
+            : (style.strokeGradient ?? AppButtonTokens.primaryStrokeGradient),
+        strokeSoftLight: true,
+        shadows: style.shadows,
+      ),
       AppButtonVariant.secondary => SavSurface(
-          curvature: style.curvature,
-          fillColor: resolvedFillColor ?? Colors.white,
-          strokeColor: resolvedStrokeColor ?? AppColors.hairline,
-          strokeWidth: style.strokeWidth,
-          dropShadowColor: const Color(0x0A1F1F1F),
-          dropShadowOffset: const Offset(1, 1),
-          dropShadowBlur: 1.5,
-          innerShadowColor: const Color(0x0F1F1F1F),
-          innerShadowOffset: const Offset(-1, -1),
-          innerShadowBlur: 1.5,
-        ),
+        curvature: style.curvature,
+        fillColor: resolvedFillColor ?? Colors.white,
+        strokeColor: resolvedStrokeColor ?? AppColors.hairline,
+        strokeWidth: style.strokeWidth,
+        dropShadowColor: AppColors.transparent4,
+        dropShadowOffset: const Offset(1, 1),
+        dropShadowBlur: 1.5,
+        innerShadowColor: AppColors.transparent6,
+        innerShadowOffset: const Offset(-1, -1),
+        innerShadowBlur: 1.5,
+      ),
       AppButtonVariant.inline => const BoxDecoration(color: Colors.transparent),
     };
+  }
 
-    final button = RepaintBoundary(
+  Widget _buildDecoratedButton(
+    AppButtonSizeTokens sizeTokens,
+    AppButtonStyleTokens style,
+    Color textIconColor,
+    Decoration decoration,
+    double? buttonWidth,
+    Color resolvedLabelColor,
+  ) {
+    final isIconOnly = widget.icon == AppButtonIcon.iconOnly;
+
+    return RepaintBoundary(
       child: NoiseLayer(
         enabled: style.noiseEnabled,
         opacity: style.noiseOpacity,
@@ -207,12 +229,15 @@ class _AppButtonState extends State<AppButton>
                 duration: AppMotion.duration(context, AppMotion.durationHigh),
                 switchInCurve: AppMotion.curveOut,
                 switchOutCurve: AppMotion.curveGentleOut,
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  final bool isEntering = child.key == const ValueKey('loading');
+                transitionBuilder: (child, animation) {
+                  final isEntering = child.key == const ValueKey('loading');
                   return FadeTransition(
                     opacity: animation,
                     child: ScaleTransition(
-                      scale: Tween<double>(begin: isEntering ? 0.8 : 0.9, end: 1.0).animate(animation),
+                      scale: Tween<double>(
+                        begin: isEntering ? 0.8 : 0.9,
+                        end: 1,
+                      ).animate(animation),
                       child: child,
                     ),
                   );
@@ -230,14 +255,57 @@ class _AppButtonState extends State<AppButton>
                     : SizedBox(
                         key: const ValueKey('content'),
                         child: isIconOnly
-                            ? Center(child: _iconSlot(widget.leading, sizeTokens.iconSize, textIconColor))
-                            : buttonContent,
+                            ? Center(
+                                child: _iconSlot(
+                                  widget.leading,
+                                  sizeTokens.iconSize,
+                                  textIconColor,
+                                ),
+                              )
+                            : _buildContent(sizeTokens, style, textIconColor),
                       ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sizeTokens = AppButtonSizeTokens.resolve(widget.size);
+    final style = AppButtonStyleTokens.resolve(widget.variant, widget.size);
+
+    final resolvedFillColor = widget.fillColor ?? style.fillColor;
+    final resolvedLabelColor = widget.labelColor ?? style.labelColor;
+    final resolvedStrokeColor = widget.strokeColor ?? style.strokeColor;
+
+    final isIconOnly = widget.icon == AppButtonIcon.iconOnly;
+    final buttonWidth = switch (widget.width) {
+      AppButtonWidth.full => double.infinity,
+      AppButtonWidth.half => null,
+      AppButtonWidth.hug => isIconOnly ? sizeTokens.height : null,
+    };
+
+    final textIconColor =
+        (widget.variant == AppButtonVariant.inline && widget.labelColor == null)
+        ? Colors.white
+        : resolvedLabelColor;
+
+    final decoration = _buildDecoration(
+      style,
+      resolvedFillColor,
+      resolvedStrokeColor,
+    );
+
+    final button = _buildDecoratedButton(
+      sizeTokens,
+      style,
+      textIconColor,
+      decoration,
+      buttonWidth,
+      resolvedLabelColor,
     );
 
     final Widget displayWidget;
@@ -249,9 +317,8 @@ class _AppButtonState extends State<AppButton>
       displayWidget = button;
     }
 
-    final Widget opacityWidget = AnimatedOpacity(
-      opacity: (widget.state == AppButtonState.disabled) ? 0.4 : 1.0,
-      duration: const Duration(milliseconds: 150),
+    final Widget opacityWidget = DisabledFade(
+      disabled: widget.state == AppButtonState.disabled,
       child: displayWidget,
     );
 
@@ -264,11 +331,12 @@ class _AppButtonState extends State<AppButton>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
-          final scale = _tapUpScale + (_scaleDelta * _controller.value * GlobalConfig.pressSensitivity.value);
-          Widget current = Transform.scale(
-            scale: scale,
-            child: child,
-          );
+          final scale =
+              _tapUpScale +
+              (_scaleDelta *
+                  _controller.value *
+                  AppButtonTokens.pressSensitivity);
+          Widget current = child!;
           if (widget.variant == AppButtonVariant.inline) {
             current = Opacity(
               opacity: (1.0 - (0.3 * _controller.value)).clamp(0.0, 1.0),
@@ -290,7 +358,9 @@ class _AppButtonState extends State<AppButton>
                             colors: [Colors.transparent, Colors.transparent],
                           ),
                         ),
-                        color: Colors.black.withOpacity((0.08 * _controller.value).clamp(0.0, 1.0)),
+                        color: Colors.black.withValues(
+                          alpha: (0.08 * _controller.value).clamp(0.0, 1.0),
+                        ),
                       ),
                     ),
                   ),
@@ -298,7 +368,10 @@ class _AppButtonState extends State<AppButton>
               ],
             );
           }
-          return current;
+          return Transform.scale(
+            scale: scale,
+            child: current,
+          );
         },
         child: opacityWidget,
       ),

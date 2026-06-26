@@ -4,7 +4,8 @@ import 'package:flutter/physics.dart';
 
 class AppMotion {
   // Reduces motion (for accessibility).
-  static bool reduce(BuildContext context) => MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+  static bool reduce(BuildContext context) =>
+      MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
   // Spring Definitions
   static const SpringDescription springInteractive = SpringDescription(
@@ -16,13 +17,13 @@ class AppMotion {
   static const SpringDescription springDefault = SpringDescription(
     mass: 1,
     stiffness: 100, // ~0.45s, bounce 0
-    damping: 20,    // Critically damped
+    damping: 20, // Critically damped
   );
 
   static const SpringDescription springSnappy = SpringDescription(
     mass: 1,
     stiffness: 400, // 150ms curve
-    damping: 40,    // Over-damped (bounce 0)
+    damping: 40, // Over-damped (bounce 0)
   );
 
   static const SpringDescription springGentle = SpringDescription(
@@ -51,8 +52,8 @@ class AppMotion {
   // Curves
   static const Curve curveOut = Curves.easeOutCubic;
   static const Curve curveInOut = Curves.easeInOutCubic;
-  static const Curve curveGentleOut = Cubic(0.16, 1.0, 0.3, 1.0);
-  static const Curve curveEmphasized = Cubic(0.2, 0.0, 0.0, 1.0);
+  static const Curve curveGentleOut = Cubic(0.16, 1, 0.3, 1);
+  static const Curve curveEmphasized = Cubic(0.2, 0, 0, 1);
 
   // Helper for applying enter blur
   static Widget blurIn(Animation<double> animation, Widget child) {
@@ -60,10 +61,13 @@ class AppMotion {
       animation: animation,
       builder: (context, child) {
         if (reduce(context)) return child!;
-        final double blurAmount = 4.0 * (1.0 - animation.value);
+        final blurAmount = 4.0 * (1.0 - animation.value);
         if (blurAmount <= 0.05) return child!;
         return ImageFiltered(
-          imageFilter: ui.ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
+          imageFilter: ui.ImageFilter.blur(
+            sigmaX: blurAmount,
+            sigmaY: blurAmount,
+          ),
           child: child,
         );
       },
@@ -80,31 +84,34 @@ class AppMotion {
   }) {
     return Builder(
       builder: (context) {
-        final bool reduceMotion = reduce(context);
+        final reduceMotion = reduce(context);
         return AnimatedSwitcher(
           duration: reduceMotion ? Duration.zero : (duration ?? durationMedium),
           switchInCurve: curveOut,
           switchOutCurve: curveGentleOut,
-          transitionBuilder: (Widget child, Animation<double> animation) {
+          transitionBuilder: (child, animation) {
             if (reduceMotion) {
               return FadeTransition(
                 opacity: animation,
                 child: child,
               );
             }
-            final bool isEntering = animation.status != AnimationStatus.reverse;
-            final double slideOffset = isEntering ? slideYEnter : slideYExit;
+            final isEntering = animation.status != AnimationStatus.reverse;
+            final slideOffset = isEntering ? slideYEnter : slideYExit;
 
             return AnimatedBuilder(
               animation: animation,
               builder: (context, child) {
-                final double y = slideOffset * (1.0 - animation.value);
-                final double blurAmount = 4.0 * (1.0 - animation.value);
+                final y = slideOffset * (1.0 - animation.value);
+                final blurAmount = 4.0 * (1.0 - animation.value);
 
-                Widget result = child!;
+                var result = child!;
                 if (blurAmount > 0.05) {
                   result = ImageFiltered(
-                    imageFilter: ui.ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
+                    imageFilter: ui.ImageFilter.blur(
+                      sigmaX: blurAmount,
+                      sigmaY: blurAmount,
+                    ),
                     child: result,
                   );
                 }
@@ -130,27 +137,26 @@ class AppMotion {
 }
 
 class SpringCurve extends Curve {
+  SpringCurve(SpringDescription spring)
+    : _sim = SpringSimulation(spring, 0, 1, 0),
+      _endTime = _findEndTime(spring);
   final SpringSimulation _sim;
   final double _endTime;
 
-  SpringCurve(SpringDescription spring)
-      : _sim = SpringSimulation(spring, 0.0, 1.0, 0.0),
-        _endTime = _findEndTime(spring);
-
   static double _findEndTime(SpringDescription spring) {
-    final sim = SpringSimulation(spring, 0.0, 1.0, 0.0);
+    final sim = SpringSimulation(spring, 0, 1, 0);
     // Find when it is close enough to 1.0
-    for (double t = 0.01; t < 2.0; t += 0.01) {
+    for (var t = 0.01; t < 2.0; t += 0.01) {
       if ((sim.x(t) - 1.0).abs() < 1e-3 && sim.dx(t).abs() < 1e-3) {
         return t;
       }
     }
-    return 1.0;
+    return 1;
   }
 
   @override
   double transformInternal(double t) {
-    if (t >= 1.0) return 1.0;
+    if (t >= 1.0) return 1;
     return _sim.x(t * _endTime).clamp(0.0, 1.0);
   }
 }

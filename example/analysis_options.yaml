@@ -1,0 +1,2 @@
+# The example app inherits the same strict rule set as the sav_ds package.
+include: ../analysis_options.yaml

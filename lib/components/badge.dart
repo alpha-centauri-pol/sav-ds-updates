@@ -3,6 +3,7 @@ import '../core/squircle.dart';
 import '../core/tokens.dart';
 
 enum BadgeType { count, dot }
+
 enum BadgeSize { sm, md, lg }
 
 class SavBadge extends StatelessWidget {
@@ -22,7 +23,7 @@ class SavBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (type == BadgeType.dot) {
-      final double diameter = switch (size) {
+      final diameter = switch (size) {
         BadgeSize.sm => 6.0,
         BadgeSize.md => 10.0,
         BadgeSize.lg => 14.0,
@@ -38,20 +39,19 @@ class SavBadge extends StatelessWidget {
       );
     } else {
       // count badge
-      final double height = switch (size) {
+      final height = switch (size) {
         BadgeSize.sm => 18.0,
         BadgeSize.md => 24.0,
         BadgeSize.lg => 30.0,
       };
 
-
-      final int curvature = switch (size) {
+      final curvature = switch (size) {
         BadgeSize.sm => 4,
         BadgeSize.md => 6,
         BadgeSize.lg => 8,
       };
 
-      final double minWidth = height;
+      final minWidth = height;
 
       return Container(
         height: height,
@@ -70,7 +70,12 @@ class SavBadge extends StatelessWidget {
               transitionBuilder: (child, animation) => FadeTransition(
                 opacity: animation,
                 child: ScaleTransition(
-                  scale: Tween(begin: 0.8, end: 1.0).animate(CurvedAnimation(parent: animation, curve: AppMotion.curveOut)),
+                  scale: Tween<double>(begin: 0.8, end: 1).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: AppMotion.curveOut,
+                    ),
+                  ),
                   child: child,
                 ),
               ),
@@ -78,8 +83,10 @@ class SavBadge extends StatelessWidget {
                 value ?? '',
                 key: ValueKey(value ?? ''),
                 style: (switch (size) {
-                  BadgeSize.sm => AppTextStyles.caption550.copyWith(fontSize: 10),
-                  BadgeSize.md => AppTextStyles.caption550,
+                  BadgeSize.sm => AppTextStyles.captionRegular.copyWith(
+                        fontSize: 10,
+                      ),
+                  BadgeSize.md => AppTextStyles.captionRegular,
                   BadgeSize.lg => AppTextStyles.bodyBold.copyWith(fontSize: 14),
                 }).copyWith(color: Colors.white),
               ),

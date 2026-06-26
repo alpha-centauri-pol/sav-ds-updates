@@ -1,17 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'core/tokens.dart';
-import 'core/noise.dart';
-import 'components/app_button.dart';
-import 'components/input_field.dart';
-import 'components/otp_input.dart';
-import 'components/amount_input.dart';
-import 'components/segmented_control.dart';
-import 'components/badge.dart';
-import 'components/sav_chip.dart';
-import 'components/selectable_row.dart';
-import 'dev/playgrounds.dart';
-import 'dev/global_config.dart';
+import 'package:sav_ds/sav_ds.dart';
+import 'playground_registry.dart';
+import 'playgrounds.dart';
 
 void main() => runApp(const SavApp());
 
@@ -50,7 +41,7 @@ class _ShimmerTitleState extends State<ShimmerTitle>
 
   void _triggerShimmer() {
     if (!_controller.isAnimating) {
-      _controller.forward(from: 0.0);
+      _controller.forward(from: 0);
     }
   }
 
@@ -65,7 +56,9 @@ class _ShimmerTitleState extends State<ShimmerTitle>
           if (progress == 0.0 || progress == 1.0) {
             return Text(
               'Sav Design System',
-              style: AppTextStyles.headline.copyWith(fontWeight: FontWeight.bold),
+              style: AppTextStyles.calloutCta.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             );
           }
 
@@ -90,11 +83,11 @@ class _ShimmerTitleState extends State<ShimmerTitle>
             scale: 0.5,
             curvature: 4,
             child: ShaderMask(
-              shaderCallback: (bounds) => gradient.createShader(bounds),
+              shaderCallback: gradient.createShader,
               blendMode: BlendMode.srcIn,
               child: Text(
                 'Sav Design System',
-                style: AppTextStyles.headline.copyWith(
+                style: AppTextStyles.calloutCta.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -123,7 +116,7 @@ class _GalleryScaffoldState extends State<GalleryScaffold> {
       backgroundColor: AppColors.obsidian,
       child: const Icon(Icons.settings_outlined, color: Colors.white),
       onPressed: () {
-        showModalBottomSheet(
+        showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
@@ -148,7 +141,7 @@ class _GalleryScaffoldState extends State<GalleryScaffold> {
         decoration: const BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: AppColors.hairline, width: 1.0),
+            top: BorderSide(color: AppColors.hairline),
           ),
         ),
         child: Column(
@@ -162,9 +155,12 @@ class _GalleryScaffoldState extends State<GalleryScaffold> {
                     bottom: 4,
                     height: 3,
                     child: AnimatedAlign(
-                      duration: AppMotion.duration(context, const Duration(milliseconds: 250)),
+                      duration: AppMotion.duration(
+                        context,
+                        const Duration(milliseconds: 250),
+                      ),
                       curve: AppMotion.curveOut,
-                      alignment: Alignment(-1.0 + (_tabIndex * (2.0 / 3.0)), 0.0),
+                      alignment: Alignment(-1.0 + (_tabIndex * (2.0 / 3.0)), 0),
                       child: FractionallySizedBox(
                         widthFactor: 0.25,
                         child: Center(
@@ -181,7 +177,12 @@ class _GalleryScaffoldState extends State<GalleryScaffold> {
                   ),
                   Row(
                     children: List.generate(4, (index) {
-                      final itemLabels = ['Buttons', 'Inputs', 'Controls', 'Indicators'];
+                      final itemLabels = [
+                        'Buttons',
+                        'Inputs',
+                        'Controls',
+                        'Indicators',
+                      ];
                       final itemIcons = [
                         Icons.smart_button_rounded,
                         Icons.input_rounded,
@@ -203,7 +204,9 @@ class _GalleryScaffoldState extends State<GalleryScaffold> {
                             children: [
                               Icon(
                                 itemIcons[index],
-                                color: isSelected ? AppColors.obsidian : AppColors.slate,
+                                color: isSelected
+                                    ? AppColors.obsidian
+                                    : AppColors.slate,
                                 size: 22,
                               ),
                               const SizedBox(height: 2),
@@ -211,8 +214,12 @@ class _GalleryScaffoldState extends State<GalleryScaffold> {
                                 itemLabels[index],
                                 style: AppTextStyles.captionRegular.copyWith(
                                   fontSize: 11,
-                                  color: isSelected ? AppColors.obsidian : AppColors.slate,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                  color: isSelected
+                                      ? AppColors.obsidian
+                                      : AppColors.slate,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ],
@@ -230,30 +237,35 @@ class _GalleryScaffoldState extends State<GalleryScaffold> {
       ),
       body: SafeArea(
         child: AnimatedSwitcher(
-          duration: AppMotion.duration(context, const Duration(milliseconds: 300)),
+          duration: AppMotion.duration(
+            context,
+            const Duration(milliseconds: 300),
+          ),
           switchInCurve: AppMotion.curveOut,
           switchOutCurve: AppMotion.curveGentleOut,
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            final bool reduceMotion = AppMotion.reduce(context);
+          transitionBuilder: (child, animation) {
+            final reduceMotion = AppMotion.reduce(context);
             if (reduceMotion) {
               return FadeTransition(opacity: animation, child: child);
             }
-            final bool isEntering = child.key == ValueKey<int>(_tabIndex);
-            final directionMultiplier = (_tabIndex >= _prevTabIndex) ? 1.0 : -1.0;
-            
+            final isEntering = child.key == ValueKey<int>(_tabIndex);
+            final directionMultiplier = (_tabIndex >= _prevTabIndex)
+                ? 1.0
+                : -1.0;
+
             final Tween<Offset> slideTween;
             if (isEntering) {
               slideTween = Tween<Offset>(
-                begin: Offset(directionMultiplier * 1.0, 0.0),
+                begin: Offset(directionMultiplier * 1.0, 0),
                 end: Offset.zero,
               );
             } else {
               slideTween = Tween<Offset>(
-                begin: Offset(-directionMultiplier * 1.0, 0.0),
+                begin: Offset(-directionMultiplier * 1.0, 0),
                 end: Offset.zero,
               );
             }
-            
+
             return FadeTransition(
               opacity: animation,
               child: SlideTransition(
@@ -262,11 +274,11 @@ class _GalleryScaffoldState extends State<GalleryScaffold> {
               ),
             );
           },
-          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+          layoutBuilder: (currentChild, previousChildren) {
             return Stack(
               children: <Widget>[
                 ...previousChildren,
-                if (currentChild != null) currentChild,
+                ?currentChild,
               ],
             );
           },
@@ -295,32 +307,22 @@ class GlobalControlsSheet extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        MediaQuery.of(context).padding.bottom + 24,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Global Controls', style: AppTextStyles.headline.copyWith(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
-          Text('Press Sensitivity', style: AppTextStyles.bodyBold),
-          const SizedBox(height: 8),
-          ValueListenableBuilder<double>(
-            valueListenable: GlobalConfig.pressSensitivity,
-            builder: (context, val, _) {
-              return Row(
-                children: [
-                  Expanded(
-                    child: Slider(
-                      value: val,
-                      min: 0.1,
-                      max: 2.0,
-                      onChanged: (v) => GlobalConfig.pressSensitivity.value = v,
-                    ),
-                  ),
-                  SizedBox(width: 40, child: Text(val.toStringAsFixed(1), style: AppTextStyles.caption550)),
-                ],
-              );
-            },
+          Text(
+            'Global Controls',
+            style: AppTextStyles.calloutCta.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 24),
           Text('Active Playground Snippets', style: AppTextStyles.bodyBold),
@@ -328,7 +330,12 @@ class GlobalControlsSheet extends StatelessWidget {
           ValueListenableBuilder<Map<String, String>>(
             valueListenable: PlaygroundRegistry.instance.snippets,
             builder: (context, map, _) {
-              if (map.isEmpty) return const Text('No snippets generated yet.', style: TextStyle(color: AppColors.slate));
+              if (map.isEmpty) {
+                return const Text(
+                  'No snippets generated yet.',
+                  style: TextStyle(color: AppColors.slate),
+                );
+              }
               return Container(
                 height: 200,
                 padding: const EdgeInsets.all(12),
@@ -338,17 +345,33 @@ class GlobalControlsSheet extends StatelessWidget {
                   border: Border.all(color: AppColors.hairline),
                 ),
                 child: ListView(
-                  children: map.entries.map((e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('// ${e.key}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.slate)),
-                        const SizedBox(height: 4),
-                        Text(e.value, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: AppColors.obsidian)),
-                      ],
-                    ),
-                  )).toList(),
+                  children: map.entries
+                      .map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '// ${e.key}',
+                                style: AppTextStyles.captionRegular.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.slate,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                e.value,
+                                style: AppTextStyles.captionRegular.copyWith(
+                                  fontFamily: 'monospace',
+                                  color: AppColors.obsidian,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               );
             },
@@ -361,14 +384,17 @@ class GlobalControlsSheet extends StatelessWidget {
             onPressed: () {
               final map = PlaygroundRegistry.instance.snippets.value;
               final buffer = StringBuffer();
-              for (var e in map.entries) {
-                buffer.writeln('// ${e.key}');
-                buffer.writeln(e.value);
-                buffer.writeln();
+              for (final e in map.entries) {
+                buffer
+                  ..writeln('// ${e.key}')
+                  ..writeln(e.value)
+                  ..writeln();
               }
               Clipboard.setData(ClipboardData(text: buffer.toString()));
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied to clipboard!')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copied to clipboard!')),
+              );
             },
           ),
         ],
@@ -391,43 +417,116 @@ class ButtonsTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 20,
         children: [
-          _buildAccordion('Button Playground', const ButtonPlayground()),
-          _buildSectionCard('Primary (Gradient)', [
-            _buildRow('Sizes', [
-              AppButton(label: 'Small', variant: AppButtonVariant.primary, size: AppButtonSize.small, onPressed: () {}),
-              AppButton(label: 'Regular', variant: AppButtonVariant.primary, size: AppButtonSize.regular, onPressed: () {}),
-              AppButton(label: 'Large', variant: AppButtonVariant.primary, size: AppButtonSize.large, onPressed: () {}),
+          AccordionWidget(title: 'Button Playground', child: const ButtonPlayground()),
+          SectionCardWidget(title: 'Primary (Gradient)', children: [
+            RowWidget(title: 'Sizes', items: [
+              AppButton(
+                label: 'Small',
+                variant: AppButtonVariant.primary,
+                size: AppButtonSize.small,
+                onPressed: () {},
+              ),
+              AppButton(
+                label: 'Regular',
+                variant: AppButtonVariant.primary,
+                onPressed: () {},
+              ),
+              AppButton(
+                label: 'Large',
+                variant: AppButtonVariant.primary,
+                size: AppButtonSize.large,
+                onPressed: () {},
+              ),
             ]),
           ]),
-          _buildSectionCard('Secondary (White Material)', [
-            _buildRow('Sizes', [
-              AppButton(label: 'Small', variant: AppButtonVariant.secondary, size: AppButtonSize.small, onPressed: () {}),
-              AppButton(label: 'Regular', variant: AppButtonVariant.secondary, size: AppButtonSize.regular, onPressed: () {}),
-              AppButton(label: 'Large', variant: AppButtonVariant.secondary, size: AppButtonSize.large, onPressed: () {}),
+          SectionCardWidget(title: 'Secondary (White Material)', children: [
+            RowWidget(title: 'Sizes', items: [
+              AppButton(
+                label: 'Small',
+                size: AppButtonSize.small,
+                onPressed: () {},
+              ),
+              AppButton(label: 'Regular', onPressed: () {}),
+              AppButton(
+                label: 'Large',
+                size: AppButtonSize.large,
+                onPressed: () {},
+              ),
             ]),
           ]),
-          _buildSectionCard('Inline (Green Gradient)', [
-            _buildRow('Sizes', [
-              Align(alignment: Alignment.centerLeft, child: AppButton(label: '+ Buy Small', variant: AppButtonVariant.inline, size: AppButtonSize.small, onPressed: () {})),
-              Align(alignment: Alignment.centerLeft, child: AppButton(label: '+ Buy Regular', variant: AppButtonVariant.inline, size: AppButtonSize.regular, onPressed: () {})),
-              Align(alignment: Alignment.centerLeft, child: AppButton(label: '+ Buy Large', variant: AppButtonVariant.inline, size: AppButtonSize.large, onPressed: () {})),
+          SectionCardWidget(title: 'Inline (Green Gradient)', children: [
+            RowWidget(title: 'Sizes', items: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppButton(
+                  label: '+ Buy Small',
+                  variant: AppButtonVariant.inline,
+                  size: AppButtonSize.small,
+                  onPressed: () {},
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppButton(
+                  label: '+ Buy Regular',
+                  variant: AppButtonVariant.inline,
+                  onPressed: () {},
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppButton(
+                  label: '+ Buy Large',
+                  variant: AppButtonVariant.inline,
+                  size: AppButtonSize.large,
+                  onPressed: () {},
+                ),
+              ),
             ]),
           ]),
-          _buildSectionCard('States & Layout', [
-            _buildRow('Width Layouts', [
-              AppButton(label: 'Hug Width', width: AppButtonWidth.hug, onPressed: () {}),
-              AppButton(label: 'Half Width', width: AppButtonWidth.half, onPressed: () {}),
-              AppButton(label: 'Full Width', width: AppButtonWidth.full, onPressed: () {}),
+          SectionCardWidget(title: 'States & Layout', children: [
+            RowWidget(title: 'Width Layouts', items: [
+              AppButton(label: 'Hug Width', onPressed: () {}),
+              AppButton(
+                label: 'Half Width',
+                width: AppButtonWidth.half,
+                onPressed: () {},
+              ),
+              AppButton(
+                label: 'Full Width',
+                width: AppButtonWidth.full,
+                onPressed: () {},
+              ),
             ]),
-            _buildRow('Icon Positions', [
-              AppButton(label: 'Leading Icon', icon: AppButtonIcon.leading, onPressed: () {}),
-              AppButton(label: 'Trailing Icon', icon: AppButtonIcon.trailing, onPressed: () {}),
-              AppButton(label: '', icon: AppButtonIcon.iconOnly, onPressed: () {}),
+            RowWidget(title: 'Icon Positions', items: [
+              AppButton(
+                label: 'Leading Icon',
+                icon: AppButtonIcon.leading,
+                onPressed: () {},
+              ),
+              AppButton(
+                label: 'Trailing Icon',
+                icon: AppButtonIcon.trailing,
+                onPressed: () {},
+              ),
+              AppButton(
+                label: '',
+                icon: AppButtonIcon.iconOnly,
+                onPressed: () {},
+              ),
             ]),
-            _buildRow('Interactive States', [
-              AppButton(label: 'Normal', state: AppButtonState.normal, onPressed: () {}),
-              AppButton(label: 'Disabled', state: AppButtonState.disabled, onPressed: () {}),
-              AppButton(label: 'Loading', state: AppButtonState.loading, onPressed: () {}),
+            RowWidget(title: 'Interactive States', items: [
+              AppButton(label: 'Normal', onPressed: () {}),
+              AppButton(
+                label: 'Disabled',
+                state: AppButtonState.disabled,
+                onPressed: () {},
+              ),
+              AppButton(
+                label: 'Loading',
+                state: AppButtonState.loading,
+                onPressed: () {},
+              ),
             ]),
           ]),
         ],
@@ -469,10 +568,13 @@ class _InputsTabState extends State<InputsTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 20,
         children: [
-          _buildAccordion('InputField Playground', const InputFieldPlayground()),
-          _buildAccordion('OTPInput Playground', const OTPPlayground()),
-          _buildAccordion('AmountInput Playground', const AmountPlayground()),
-          _buildSectionCard('InputField (Boxed & Underline)', [
+          AccordionWidget(
+            title: 'InputField Playground',
+            child: const InputFieldPlayground(),
+          ),
+          AccordionWidget(title: 'OTPInput Playground', child: const OTPPlayground()),
+          AccordionWidget(title: 'AmountInput Playground', child: const AmountPlayground()),
+          SectionCardWidget(title: 'InputField (Boxed & Underline)', children: [
             const InputField(
               label: 'Email Address',
               placeholder: 'Enter your email...',
@@ -502,33 +604,42 @@ class _InputsTabState extends State<InputsTab> {
               placeholder: 'Type something...',
             ),
           ]),
-          _buildSectionCard('SearchField Preset', [
+          SectionCardWidget(title: 'SearchField Preset', children: [
             InputField.search(
               placeholder: 'Search banking or countries...',
             ),
           ]),
-          _buildSectionCard('OTPInput Cell Grid', [
-            const Text('Default Code OTP Cells (6 Length):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          SectionCardWidget(title: 'OTPInput Cell Grid', children: [
+            Text(
+              'Default Code OTP Cells (6 Length):',
+              style: AppTextStyles.captionRegular.copyWith(fontWeight: FontWeight.bold),
+            ),
             OTPInput(
-              length: 6,
               controller: _otpController,
             ),
-            const Text('Bronze Error OTP Cells:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            Text(
+              'Bronze Error OTP Cells:',
+              style: AppTextStyles.captionRegular.copyWith(fontWeight: FontWeight.bold),
+            ),
             const OTPInput(
-              length: 6,
               state: OTPInputState.error,
             ),
           ]),
-          _buildSectionCard('AmountInput (Obviously Numeric)', [
-            const Text('Gold Standard Intent:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          SectionCardWidget(title: 'AmountInput (Obviously Numeric)', children: [
+            Text(
+              'Gold Standard Intent:',
+              style: AppTextStyles.captionRegular.copyWith(fontWeight: FontWeight.bold),
+            ),
             AmountInput(
-              currency: 'AED',
               intent: AmountInputIntent.gold,
               nudgeText: '0.1791g ⓘ',
               controller: _amountController,
             ),
             const SizedBox(height: 12),
-            const Text('Purple Power Intent:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            Text(
+              'Purple Power Intent:',
+              style: AppTextStyles.captionRegular.copyWith(fontWeight: FontWeight.bold),
+            ),
             AmountInput(
               currency: 'USD',
               intent: AmountInputIntent.purple,
@@ -567,10 +678,19 @@ class _ControlsTabState extends State<ControlsTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 20,
         children: [
-          _buildAccordion('SegmentedControl Playground', const SegmentedPlayground()),
-          _buildAccordion('SelectableRow Playground', const SelectableRowPlayground()),
-          _buildSectionCard('SegmentedControl (Pill Style)', [
-            const Text('Horizontal Pill tabs (md size):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          AccordionWidget(
+            title: 'SegmentedControl Playground',
+            child: const SegmentedPlayground(),
+          ),
+          AccordionWidget(
+            title: 'SelectableRow Playground',
+            child: const SelectableRowPlayground(),
+          ),
+          SectionCardWidget(title: 'SegmentedControl (Pill Style)', children: [
+            Text(
+              'Horizontal Pill tabs (md size):',
+              style: AppTextStyles.captionRegular.copyWith(fontWeight: FontWeight.bold),
+            ),
             SegmentedControl(
               items: const [
                 SegmentedItem(label: 'Jan'),
@@ -580,7 +700,10 @@ class _ControlsTabState extends State<ControlsTab> {
               selected: _pillIndex,
               onChanged: (idx) => setState(() => _pillIndex = idx),
             ),
-            const Text('Horizontal Pill tabs (sm size + icons):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            Text(
+              'Horizontal Pill tabs (sm size + icons):',
+              style: AppTextStyles.captionRegular.copyWith(fontWeight: FontWeight.bold),
+            ),
             SegmentedControl(
               items: const [
                 SegmentedItem(label: 'Lock', icon: Icons.lock_outline_rounded),
@@ -592,7 +715,7 @@ class _ControlsTabState extends State<ControlsTab> {
               onChanged: (idx) => setState(() => _pillIndex = idx),
             ),
           ]),
-          _buildSectionCard('SegmentedControl (Underline / Tabs)', [
+          SectionCardWidget(title: 'SegmentedControl (Underline / Tabs)', children: [
             SegmentedControl(
               items: const [
                 SegmentedItem(label: 'Range 1D'),
@@ -605,11 +728,11 @@ class _ControlsTabState extends State<ControlsTab> {
               onChanged: (idx) => setState(() => _underIndex = idx),
             ),
           ]),
-          _buildSectionCard('SelectableRow (checkmark vs radioDot)', [
+          SectionCardWidget(title: 'SelectableRow (checkmark vs radioDot)', children: [
             SelectableRow(
               label: 'United Arab Emirates',
               secondary: 'Dialing code: +971',
-              leadingWidget: const Text('🇦🇪', style: TextStyle(fontSize: 18)),
+              leadingWidget: Text('🇦🇪', style: AppTextStyles.bodyRegular.copyWith(fontSize: 18)),
               selected: _row1Selected,
               onTap: () => setState(() => _row1Selected = !_row1Selected),
             ),
@@ -648,37 +771,56 @@ class IndicatorsTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 20,
         children: [
-          _buildAccordion('Badge Playground', const BadgePlayground()),
-          _buildAccordion('Chip Playground', const ChipPlayground()),
-          _buildSectionCard('Badge Indicators (Count & Dot)', [
-            _buildRow('Dot status indicators', [
-              const SavBadge(type: BadgeType.dot, size: BadgeSize.sm, color: AppColors.positive),
-              const SavBadge(type: BadgeType.dot, size: BadgeSize.md, color: AppColors.negative),
-              const SavBadge(type: BadgeType.dot, size: BadgeSize.lg, color: AppColors.info),
+          AccordionWidget(title: 'Badge Playground', child: const BadgePlayground()),
+          AccordionWidget(title: 'Chip Playground', child: const ChipPlayground()),
+          SectionCardWidget(title: 'Badge Indicators (Count & Dot)', children: [
+            RowWidget(title: 'Dot status indicators', items: [
+              const SavBadge(type: BadgeType.dot, color: AppColors.positive),
+              const SavBadge(
+                type: BadgeType.dot,
+                size: BadgeSize.md,
+                color: AppColors.negative,
+              ),
+              const SavBadge(
+                type: BadgeType.dot,
+                size: BadgeSize.lg,
+                color: AppColors.info,
+              ),
             ]),
-            _buildRow('Count indicators (sm / md / lg)', [
-              const SavBadge(type: BadgeType.count, size: BadgeSize.sm, value: '4'),
-              const SavBadge(type: BadgeType.count, size: BadgeSize.md, value: '9+'),
-              const SavBadge(type: BadgeType.count, size: BadgeSize.lg, value: '99+'),
+            RowWidget(title: 'Count indicators (sm / md / lg)', items: [
+              const SavBadge(value: '4'),
+              const SavBadge(size: BadgeSize.md, value: '9+'),
+              const SavBadge(size: BadgeSize.lg, value: '99+'),
             ]),
           ]),
-          _buildSectionCard('SavChip Primitive', [
-            _buildRow('Sizes (sm / lg)', [
-              const SavChip(label: '9+', size: SavChipSize.sm, tone: SavChipTone.neutralDefault),
-              const SavChip(label: 'En', size: SavChipSize.lg, tone: SavChipTone.neutralDefault, showLgNoise: true),
+          SectionCardWidget(title: 'SavChip Primitive', children: [
+            RowWidget(title: 'Sizes (sm / lg)', items: [
+              const SavChip(label: '9+'),
+              const SavChip(
+                label: 'En',
+                size: SavChipSize.lg,
+                showLgNoise: true,
+              ),
             ]),
-            _buildRow('Tones (success / neutral / info)', [
+            RowWidget(title: 'Tones (success / neutral / info)', items: [
               const SavChip(label: 'Instant', tone: SavChipTone.success),
               const SavChip(label: 'Coming Soon', tone: SavChipTone.neutral),
               const SavChip(label: 'Gold price', tone: SavChipTone.info),
             ]),
-            _buildRow('Negative / Overdue', [
+            RowWidget(title: 'Negative / Overdue', items: [
               const SavChip(label: 'Overdue', tone: SavChipTone.negative),
-              const SavChip(label: '1-2 Days', tone: SavChipTone.neutralDefault),
+              const SavChip(label: '1-2 Days'),
             ]),
-            _buildRow('Leading Icon Container', [
-              const SavChip(label: 'Merchant', tone: SavChipTone.neutral, leadingIcon: Icons.storefront_rounded),
-              const SavChip(label: 'Bank Transfer', tone: SavChipTone.neutralDefault, leadingIcon: Icons.account_balance_rounded),
+            RowWidget(title: 'Leading Icon Container', items: [
+              const SavChip(
+                label: 'Merchant',
+                tone: SavChipTone.neutral,
+                leadingIcon: Icons.storefront_rounded,
+              ),
+              const SavChip(
+                label: 'Bank Transfer',
+                leadingIcon: Icons.account_balance_rounded,
+              ),
             ]),
           ]),
         ],
@@ -690,42 +832,38 @@ class IndicatorsTab extends StatelessWidget {
 // ----------------------------------------------------
 // COMMON WIDGET BUILDERS
 // ----------------------------------------------------
-Widget _buildHeading(String text) {
-  return Text(
-    text,
-    style: const TextStyle(
-      fontFamily: 'DM Sans',
-      fontSize: 16,
-      fontWeight: FontWeight.bold,
-      color: AppColors.obsidian,
-    ),
-  );
-}
+class HeadingWidget extends StatelessWidget {
+  const HeadingWidget(this.text, {super.key});
 
-Widget _buildAccordion(String title, Widget child) {
-  return Card(
-    margin: EdgeInsets.zero,
-    elevation: 1,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    clipBehavior: Clip.antiAlias,
-    child: Theme(
-      data: ThemeData(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        title: _buildHeading(title),
-        initiallyExpanded: false,
-        backgroundColor: Colors.white,
-        collapsedBackgroundColor: Colors.white,
-        children: [child],
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: AppTextStyles.calloutBold.copyWith(
+        fontWeight: FontWeight.bold,
+        color: AppColors.obsidian,
       ),
-    ),
-  );
+    );
+  }
 }
 
-Widget _buildSectionCard(String title, List<Widget> children) {
-  // RepaintBoundary isolates the paint-heavy SavSurface shadows/noise inside
-  // this card so scrolling the gallery doesn't repaint them every frame.
-  return RepaintBoundary(
-    child: Card(
+class AccordionWidget extends StatelessWidget {
+  const AccordionWidget({
+    required this.title,
+    required this.child,
+    this.initiallyExpanded = false,
+    super.key,
+  });
+
+  final String title;
+  final Widget child;
+  final bool initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
       margin: EdgeInsets.zero,
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -733,46 +871,91 @@ Widget _buildSectionCard(String title, List<Widget> children) {
       child: Theme(
         data: ThemeData(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          title: _buildHeading(title),
-          initiallyExpanded: false,
+          title: HeadingWidget(title),
           backgroundColor: Colors.white,
           collapsedBackgroundColor: Colors.white,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 16,
-                children: children,
-              ),
-            ),
-          ],
+          initiallyExpanded: initiallyExpanded,
+          children: [child],
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
-Widget _buildRow(String title, List<Widget> items) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    spacing: 8,
-    children: [
-      Text(
-        title,
-        style: const TextStyle(
-          fontFamily: 'DM Sans',
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: AppColors.slate,
+class SectionCardWidget extends StatelessWidget {
+  const SectionCardWidget({
+    required this.title,
+    required this.children,
+    super.key,
+  });
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    // RepaintBoundary isolates the paint-heavy SavSurface shadows/noise inside
+    // this card so scrolling the gallery doesn't repaint them every frame.
+    return RepaintBoundary(
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: Theme(
+          data: ThemeData(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            title: HeadingWidget(title),
+            backgroundColor: Colors.white,
+            collapsedBackgroundColor: Colors.white,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 16,
+                  children: children,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: items,
-      ),
-    ],
-  );
+    );
+  }
+}
+
+class RowWidget extends StatelessWidget {
+  const RowWidget({
+    required this.title,
+    required this.items,
+    super.key,
+  });
+
+  final String title;
+  final List<Widget> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        Text(
+          title,
+          style: AppTextStyles.captionRegular.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.slate,
+          ),
+        ),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: items,
+        ),
+      ],
+    );
+  }
 }

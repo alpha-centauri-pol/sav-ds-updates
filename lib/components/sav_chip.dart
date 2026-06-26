@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import '../core/squircle.dart';
+
 import '../core/noise.dart';
+import '../core/squircle.dart';
 import '../core/tokens.dart';
 
 enum SavChipSize { sm, lg }
+
 enum SavChipTone { neutralDefault, neutral, success, negative, info }
 
 class SavChip extends StatefulWidget {
   const SavChip({
-    super.key,
     required this.label,
+    super.key,
     this.size = SavChipSize.sm,
     this.tone = SavChipTone.neutralDefault,
     this.leadingIcon,
@@ -42,6 +44,46 @@ class SavChip extends StatefulWidget {
   State<SavChip> createState() => _SavChipState();
 }
 
+class SavChipTokens {
+  const SavChipTokens({
+    required this.height,
+    required this.padX,
+    required this.gap,
+    required this.curvature,
+    required this.fontSize,
+    required this.leadingContainerSize,
+    required this.leadingIconSize,
+  });
+  final double height;
+  final double padX;
+  final double gap;
+  final int curvature;
+  final double fontSize;
+  final double leadingContainerSize;
+  final double leadingIconSize;
+
+  static SavChipTokens resolve(SavChipSize size) => switch (size) {
+        SavChipSize.sm => const SavChipTokens(
+            height: 24.0,
+            padX: 6.0,
+            gap: 4.0,
+            curvature: 6,
+            fontSize: 12.0,
+            leadingContainerSize: 16.0,
+            leadingIconSize: 12.0,
+          ),
+        SavChipSize.lg => const SavChipTokens(
+            height: 36.0,
+            padX: 10.0,
+            gap: 6.0,
+            curvature: 10,
+            fontSize: 14.0,
+            leadingContainerSize: 22.0,
+            leadingIconSize: 14.0,
+          ),
+      };
+}
+
 class _SavChipState extends State<SavChip> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
@@ -70,18 +112,9 @@ class _SavChipState extends State<SavChip> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final double height = widget.size == SavChipSize.sm ? 24.0 : 36.0;
-    final double padX = widget.size == SavChipSize.sm ? 6.0 : 10.0;
-    final double gap = widget.size == SavChipSize.sm ? 4.0 : 6.0;
-    final int curvature = widget.size == SavChipSize.sm ? 6 : 10;
-    final double fontSize = widget.size == SavChipSize.sm ? 12.0 : 14.0;
-    final double leadingContainerSize = widget.size == SavChipSize.sm ? 16.0 : 22.0;
-    final double leadingIconSize = widget.size == SavChipSize.sm ? 12.0 : 14.0;
-
-    Color defaultBg = Colors.transparent;
-    Color defaultFg = AppColors.obsidian;
+  (Color bg, Color fg, Color? stroke) _resolveToneColors() {
+    var defaultBg = Colors.transparent;
+    var defaultFg = AppColors.obsidian;
     Color? defaultStroke;
 
     switch (widget.tone) {
@@ -89,40 +122,38 @@ class _SavChipState extends State<SavChip> with SingleTickerProviderStateMixin {
         defaultBg = AppColors.white;
         defaultFg = AppColors.obsidian;
         defaultStroke = AppColors.transparent12;
-        break;
       case SavChipTone.neutral:
         defaultBg = AppColors.transparent8;
         defaultFg = AppColors.slate;
         defaultStroke = null;
-        break;
       case SavChipTone.success:
         defaultBg = AppColors.lushCapital100;
         defaultFg = AppColors.lushCapital600;
         defaultStroke = null;
-        break;
       case SavChipTone.negative:
         defaultBg = AppColors.bronzeBounty100;
         defaultFg = AppColors.bronzeBounty600;
         defaultStroke = null;
-        break;
       case SavChipTone.info:
         defaultBg = AppColors.wealthWeave100;
         defaultFg = AppColors.wealthWeave600;
         defaultStroke = null;
-        break;
     }
 
     final bg = widget.fillColor ?? defaultBg;
     final fg = widget.labelColor ?? defaultFg;
     final stroke = widget.strokeColor ?? defaultStroke;
+    
+    return (bg, fg, stroke);
+  }
 
-    Widget? leading;
+  Widget? _buildLeading(SavChipTokens tokens, Color fg) {
     if (widget.leadingWidget != null) {
-      leading = widget.leadingWidget;
+      return widget.leadingWidget;
     } else if (widget.leadingIcon != null) {
-      leading = Container(
-        width: leadingContainerSize,
-        height: leadingContainerSize,
+      return Container(
+        width: tokens.leadingContainerSize,
+        height: tokens.leadingContainerSize,
         decoration: SavSurface(
           curvature: widget.size == SavChipSize.sm ? 4 : 6,
           fillColor: AppColors.transparent4,
@@ -130,49 +161,67 @@ class _SavChipState extends State<SavChip> with SingleTickerProviderStateMixin {
         child: Center(
           child: Icon(
             widget.leadingIcon,
-            size: leadingIconSize,
+            size: tokens.leadingIconSize,
             color: widget.leadingIconColor ?? fg,
           ),
         ),
       );
     }
+    return null;
+  }
 
-    final content = Container(
-      height: height,
-      padding: EdgeInsets.symmetric(horizontal: padX),
+  Widget _buildContent(
+    SavChipTokens tokens,
+    Color bg,
+    Color fg,
+    Color? stroke,
+    Widget? leading,
+  ) {
+    return Container(
+      height: tokens.height,
+      padding: EdgeInsets.symmetric(horizontal: tokens.padX),
       decoration: SavSurface(
-        curvature: curvature,
+        curvature: tokens.curvature,
         fillColor: bg,
         strokeColor: stroke,
         strokeWidth: stroke != null ? 1.0 : 0.0,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (leading != null) ...[
             leading,
-            SizedBox(width: gap),
+            SizedBox(width: tokens.gap),
           ],
           Text(
             widget.label,
-            style: AppTextStyles.chipLabel(fontSize).copyWith(color: fg),
+            style: AppTextStyles.bodyBold.copyWith(fontSize: tokens.fontSize, color: fg),
           ),
           if (widget.trailingWidget != null) ...[
-            SizedBox(width: gap),
+            SizedBox(width: tokens.gap),
             widget.trailingWidget!,
           ],
         ],
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = SavChipTokens.resolve(widget.size);
+    final (bg, fg, stroke) = _resolveToneColors();
+    final leading = _buildLeading(tokens, fg);
+    final content = _buildContent(tokens, bg, fg, stroke, leading);
 
     Widget displayWidget = content;
-    if (widget.showLgNoise && widget.size == SavChipSize.lg && widget.tone == SavChipTone.neutralDefault) {
+    if (widget.showLgNoise &&
+        widget.size == SavChipSize.lg &&
+        widget.tone == SavChipTone.neutralDefault) {
       displayWidget = NoiseLayer(
         enabled: true,
         opacity: 0.8,
         scale: 0.5,
-        curvature: curvature,
+        curvature: tokens.curvature,
         child: content,
       );
     }

@@ -1,14 +1,15 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../core/tokens.dart';
+import 'internal/disabled_fade.dart';
 
 enum SelectableRowIndicator { checkmark, radioDot }
+
 enum SelectableRowState { normal, disabled }
 
 class SelectableRow extends StatefulWidget {
   const SelectableRow({
-    super.key,
     required this.label,
+    super.key,
     this.onTap,
     this.secondary,
     this.indicator = SelectableRowIndicator.checkmark,
@@ -31,15 +32,17 @@ class SelectableRow extends StatefulWidget {
   State<SelectableRow> createState() => _SelectableRowState();
 }
 
-class _SelectableRowState extends State<SelectableRow> with SingleTickerProviderStateMixin {
+class _SelectableRowState extends State<SelectableRow>
+    with SingleTickerProviderStateMixin {
   bool _isPressed = false;
   late final AnimationController _flashController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 300),
   );
-  late final Animation<double> _flashAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-    CurvedAnimation(parent: _flashController, curve: Curves.easeOut),
-  );
+  late final Animation<double> _flashAnimation = Tween<double>(begin: 1, end: 0)
+      .animate(
+        CurvedAnimation(parent: _flashController, curve: Curves.easeOut),
+      );
 
   @override
   void dispose() {
@@ -68,69 +71,75 @@ class _SelectableRowState extends State<SelectableRow> with SingleTickerProvider
   void _handleTap() {
     if (widget.state != SelectableRowState.disabled) {
       if (!AppMotion.reduce(context)) {
-        _flashController.forward(from: 0.0);
+        _flashController.forward(from: 0);
       }
-      if (widget.onTap != null) widget.onTap!();
+      widget.onTap?.call();
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final bool isDisabled = widget.state == SelectableRowState.disabled;
-
-    // Trailing Indicator Widget
-    Widget indicatorWidget = const SizedBox.shrink();
-    if (widget.indicator == SelectableRowIndicator.checkmark) {
-      indicatorWidget = TweenAnimationBuilder<double>(
-        duration: AppMotion.duration(context, AppMotion.durationHigh),
-        curve: AppMotion.curveOut,
-        tween: Tween<double>(begin: 0.0, end: widget.selected ? 1.0 : 0.0),
-        builder: (context, progress, child) {
-          return SizedBox(
-            width: 20,
-            height: 20,
-            child: CustomPaint(
-              painter: CheckmarkPainter(
-                progress: progress,
-                color: AppColors.obsidian,
-                strokeWidth: 2.0,
-              ),
+  Widget _buildCheckmarkIndicator(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      duration: AppMotion.duration(context, AppMotion.durationHigh),
+      curve: AppMotion.curveOut,
+      tween: Tween<double>(begin: 0, end: widget.selected ? 1.0 : 0.0),
+      builder: (context, progress, child) {
+        return SizedBox(
+          width: 20,
+          height: 20,
+          child: CustomPaint(
+            painter: CheckmarkPainter(
+              progress: progress,
+              color: AppColors.obsidian,
             ),
-          );
-        },
-      );
-    } else if (widget.indicator == SelectableRowIndicator.radioDot) {
-      indicatorWidget = AnimatedContainer(
-        duration: AppMotion.duration(context, AppMotion.durationHigh),
-        curve: AppMotion.curveOut,
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: widget.selected ? AppColors.obsidian : AppColors.hairline,
-            width: 2.0,
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRadioDotIndicator(BuildContext context) {
+    return AnimatedContainer(
+      duration: AppMotion.duration(context, AppMotion.durationHigh),
+      curve: AppMotion.curveOut,
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: widget.selected ? AppColors.obsidian : AppColors.hairline,
+          width: 2,
         ),
-        child: Center(
-          child: AnimatedScale(
-            scale: widget.selected ? 1.0 : 0.0,
-            duration: AppMotion.duration(context, const Duration(milliseconds: 220)),
-            curve: SpringCurve(AppMotion.springDefault),
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: AppColors.obsidian,
-                shape: BoxShape.circle,
-              ),
+      ),
+      child: Center(
+        child: AnimatedScale(
+          scale: widget.selected ? 1.0 : 0.0,
+          duration: AppMotion.duration(
+            context,
+            const Duration(milliseconds: 220),
+          ),
+          curve: SpringCurve(AppMotion.springDefault),
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(
+              color: AppColors.obsidian,
+              shape: BoxShape.circle,
             ),
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    final Widget rowContent = Row(
+  Widget _buildIndicator(BuildContext context) {
+    return switch (widget.indicator) {
+      SelectableRowIndicator.checkmark => _buildCheckmarkIndicator(context),
+      SelectableRowIndicator.radioDot => _buildRadioDotIndicator(context),
+    };
+  }
+
+  Widget _buildRowContent(BuildContext context, Widget indicatorWidget) {
+    return Row(
       children: [
         // Leading slot
         if (widget.leadingWidget != null) ...[
@@ -166,6 +175,13 @@ class _SelectableRowState extends State<SelectableRow> with SingleTickerProvider
         indicatorWidget,
       ],
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDisabled = widget.state == SelectableRowState.disabled;
+    final indicatorWidget = _buildIndicator(context);
+    final rowContent = _buildRowContent(context, indicatorWidget);
 
     final Widget buildWidget = GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -180,10 +196,10 @@ class _SelectableRowState extends State<SelectableRow> with SingleTickerProvider
           final color = _isPressed
               ? AppColors.darkTransparent4
               : (_flashController.isAnimating
-                  ? Colors.black.withOpacity(flashOpacity)
-                  : Colors.transparent);
+                    ? Colors.black.withValues(alpha: flashOpacity)
+                    : Colors.transparent);
           return Container(
-            height: 56.0,
+            height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: color,
@@ -191,7 +207,6 @@ class _SelectableRowState extends State<SelectableRow> with SingleTickerProvider
                   ? const Border(
                       bottom: BorderSide(
                         color: AppColors.hairline,
-                        width: 1.0,
                       ),
                     )
                   : null,
@@ -204,9 +219,8 @@ class _SelectableRowState extends State<SelectableRow> with SingleTickerProvider
     );
 
     return RepaintBoundary(
-      child: AnimatedOpacity(
-        opacity: isDisabled ? 0.4 : 1.0,
-        duration: const Duration(milliseconds: 150),
+      child: DisabledFade(
+        disabled: isDisabled,
         child: buildWidget,
       ),
     );
@@ -214,15 +228,14 @@ class _SelectableRowState extends State<SelectableRow> with SingleTickerProvider
 }
 
 class CheckmarkPainter extends CustomPainter {
-  final double progress;
-  final Color color;
-  final double strokeWidth;
-
   CheckmarkPainter({
     required this.progress,
     required this.color,
     this.strokeWidth = 2.0,
   });
+  final double progress;
+  final Color color;
+  final double strokeWidth;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -241,20 +254,26 @@ class CheckmarkPainter extends CustomPainter {
       ..lineTo(size.width * 0.78, size.height * 0.3);
 
     final pathMetrics = path.computeMetrics();
-    final totalLength = pathMetrics.fold(0.0, (double prev, ui.PathMetric metric) => prev + metric.length);
+    final totalLength = pathMetrics.fold<double>(
+      0,
+      (prev, metric) => prev + metric.length,
+    );
     final targetLength = totalLength * progress;
 
-    double currentLength = 0.0;
+    double currentLength = 0;
     final animatedPath = Path();
 
     for (final metric in pathMetrics) {
       if (currentLength >= targetLength) break;
       final remainingLength = targetLength - currentLength;
       if (remainingLength >= metric.length) {
-        animatedPath.addPath(metric.extractPath(0.0, metric.length), Offset.zero);
+        animatedPath.addPath(metric.extractPath(0, metric.length), Offset.zero);
         currentLength += metric.length;
       } else {
-        animatedPath.addPath(metric.extractPath(0.0, remainingLength), Offset.zero);
+        animatedPath.addPath(
+          metric.extractPath(0, remainingLength),
+          Offset.zero,
+        );
         currentLength += remainingLength;
       }
     }
@@ -264,6 +283,8 @@ class CheckmarkPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CheckmarkPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
+    return oldDelegate.progress != progress ||
+        oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }

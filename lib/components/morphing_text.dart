@@ -3,9 +3,9 @@ import '../core/tokens.dart';
 
 class MorphingText extends StatelessWidget {
   const MorphingText({
-    super.key,
     required this.text,
     required this.style,
+    super.key,
     this.duration,
   });
 
@@ -15,17 +15,19 @@ class MorphingText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool reduceMotion = AppMotion.reduce(context);
-    final List<String> chars = text.split('');
+    final reduceMotion = AppMotion.reduce(context);
+    final chars = text.split('');
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(chars.length, (index) {
-        final String char = chars[index];
+        final char = chars[index];
         return AppMotion.switcher(
-          duration: reduceMotion ? Duration.zero : (duration ?? AppMotion.durationHigh),
-          slideYEnter: 4.0,
-          slideYExit: 2.0,
+          duration: reduceMotion
+              ? Duration.zero
+              : (duration ?? AppMotion.durationHigh),
+          slideYEnter: 4,
+          slideYExit: 2,
           child: Text(
             char,
             key: ValueKey('${index}_$char'),

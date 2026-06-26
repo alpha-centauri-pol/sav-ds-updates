@@ -1,5 +1,5 @@
-name: sav_ds
-description: "Sav Design System — a vendored, dependency-free Flutter component library and design-token set."
+name: sav_ds_example
+description: "Gallery / playground app demonstrating the sav_ds design system."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # The design system under development, consumed via a local path dependency.
+  sav_ds:
+    path: ../
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -17,13 +21,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  # Design assets shipped with the package. Consumers reference them via the
-  # `packages/sav_ds/` prefix (see lib/core/noise.dart for the image, and the
-  # example app's pubspec for the fonts).
-  assets:
-    - assets/images/
-
   fonts:
     - family: DM Sans
       fonts:

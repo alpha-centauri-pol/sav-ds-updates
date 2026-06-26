@@ -7,18 +7,30 @@ const _ratio = 0.1765;
 
 double _r2FromCurvature(int c) {
   switch (c.clamp(0, 10)) {
-    case 0:  return 0.0;
-    case 1:  return 0.0375;
-    case 2:  return 0.0750;
-    case 3:  return 0.1500;
-    case 4:  return 0.2984;
-    case 5:  return 0.3320;
-    case 6:  return 0.3656;
-    case 7:  return 0.3992;
-    case 8:  return 0.4328;
-    case 9:  return 0.4664;
-    case 10: return 0.5000;
-    default: return 0.3320;
+    case 0:
+      return 0;
+    case 1:
+      return 0.0375;
+    case 2:
+      return 0.0750;
+    case 3:
+      return 0.1500;
+    case 4:
+      return 0.2984;
+    case 5:
+      return 0.3320;
+    case 6:
+      return 0.3656;
+    case 7:
+      return 0.3992;
+    case 8:
+      return 0.4328;
+    case 9:
+      return 0.4664;
+    case 10:
+      return 0.5000;
+    default:
+      return 0.3320;
   }
 }
 
@@ -48,7 +60,10 @@ class SquircleBorder extends OutlinedBorder {
     required this.strokeGradient,
     required this.strokeWidth,
     super.side = BorderSide.none,
-  }) : assert(curvature >= 0 && curvature <= 10);
+  }) : assert(
+         curvature >= 0 && curvature <= 10,
+         'curvature must be between 0 and 10',
+       );
 
   final int curvature;
   final LinearGradient strokeGradient;
@@ -83,11 +98,11 @@ class SquircleBorder extends OutlinedBorder {
 
   @override
   ShapeBorder scale(double t) => SquircleBorder(
-        curvature: curvature,
-        strokeGradient: strokeGradient,
-        strokeWidth: strokeWidth * t,
-        side: side.scale(t),
-      );
+    curvature: curvature,
+    strokeGradient: strokeGradient,
+    strokeWidth: strokeWidth * t,
+    side: side.scale(t),
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -107,13 +122,12 @@ class SquircleBorder extends OutlinedBorder {
     LinearGradient? strokeGradient,
     double? strokeWidth,
     BorderSide? side,
-  }) =>
-      SquircleBorder(
-        curvature: curvature ?? this.curvature,
-        strokeGradient: strokeGradient ?? this.strokeGradient,
-        strokeWidth: strokeWidth ?? this.strokeWidth,
-        side: side ?? this.side,
-      );
+  }) => SquircleBorder(
+    curvature: curvature ?? this.curvature,
+    strokeGradient: strokeGradient ?? this.strokeGradient,
+    strokeWidth: strokeWidth ?? this.strokeWidth,
+    side: side ?? this.side,
+  );
 }
 
 class SavSurface extends Decoration {
@@ -178,7 +192,11 @@ class SavSurface extends Decoration {
       dropShadowOffset: Offset.lerp(a.dropShadowOffset, b.dropShadowOffset, t),
       dropShadowBlur: ui.lerpDouble(a.dropShadowBlur, b.dropShadowBlur, t),
       innerShadowColor: Color.lerp(a.innerShadowColor, b.innerShadowColor, t),
-      innerShadowOffset: Offset.lerp(a.innerShadowOffset, b.innerShadowOffset, t),
+      innerShadowOffset: Offset.lerp(
+        a.innerShadowOffset,
+        b.innerShadowOffset,
+        t,
+      ),
       innerShadowBlur: ui.lerpDouble(a.innerShadowBlur, b.innerShadowBlur, t),
       strokeColor: Color.lerp(a.strokeColor, b.strokeColor, t),
       strokeWidth: ui.lerpDouble(a.strokeWidth, b.strokeWidth, t) ?? 0.0,
@@ -194,7 +212,8 @@ class SavSurface extends Decoration {
 }
 
 class _SavSurfacePainter extends BoxPainter {
-  _SavSurfacePainter(this.decoration, VoidCallback? onChanged) : super(onChanged);
+  _SavSurfacePainter(this.decoration, VoidCallback? onChanged)
+    : super(onChanged);
 
   final SavSurface decoration;
 
@@ -207,7 +226,9 @@ class _SavSurfacePainter extends BoxPainter {
     // 1. Drop shadow
     if (decoration.shadows != null) {
       for (final shadow in decoration.shadows!) {
-        final shadowRect = rect.shift(shadow.offset).inflate(shadow.spreadRadius);
+        final shadowRect = rect
+            .shift(shadow.offset)
+            .inflate(shadow.spreadRadius);
         final shadowPaint = Paint()
           ..color = shadow.color
           ..maskFilter = shadow.blurRadius > 0
@@ -223,7 +244,10 @@ class _SavSurfacePainter extends BoxPainter {
         decoration.dropShadowBlur != null) {
       final shadowPaint = Paint()
         ..color = decoration.dropShadowColor!
-        ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, decoration.dropShadowBlur!);
+        ..maskFilter = ui.MaskFilter.blur(
+          ui.BlurStyle.normal,
+          decoration.dropShadowBlur!,
+        );
       canvas.drawPath(
         squirclePath(rect.shift(decoration.dropShadowOffset!), c),
         shadowPaint,
@@ -245,21 +269,34 @@ class _SavSurfacePainter extends BoxPainter {
     if (decoration.innerShadowColor != null &&
         decoration.innerShadowOffset != null &&
         decoration.innerShadowBlur != null) {
-      canvas.save();
-      canvas.clipPath(squirclePath(rect, c));
-      final outerRect = rect.inflate(10.0);
+      canvas
+        ..save()
+        ..clipPath(squirclePath(rect, c));
+      final outerRect = rect.inflate(10);
       final outerPath = Path()..addRect(outerRect);
-      final offsetPath = squirclePath(rect.shift(decoration.innerShadowOffset!), c);
-      final innerShadowPath = Path.combine(PathOperation.difference, outerPath, offsetPath);
+      final offsetPath = squirclePath(
+        rect.shift(decoration.innerShadowOffset!),
+        c,
+      );
+      final innerShadowPath = Path.combine(
+        PathOperation.difference,
+        outerPath,
+        offsetPath,
+      );
       final innerShadowPaint = Paint()
         ..color = decoration.innerShadowColor!
-        ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, decoration.innerShadowBlur!);
-      canvas.drawPath(innerShadowPath, innerShadowPaint);
-      canvas.restore();
+        ..maskFilter = ui.MaskFilter.blur(
+          ui.BlurStyle.normal,
+          decoration.innerShadowBlur!,
+        );
+      canvas
+        ..drawPath(innerShadowPath, innerShadowPaint)
+        ..restore();
     }
 
     // 4. Stroke / Border (solid or gradient, optionally soft light)
-    if (decoration.strokeWidth > 0 && (decoration.strokeColor != null || decoration.strokeGradient != null)) {
+    if (decoration.strokeWidth > 0 &&
+        (decoration.strokeColor != null || decoration.strokeGradient != null)) {
       final strokePaint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = decoration.strokeWidth;
@@ -271,7 +308,10 @@ class _SavSurfacePainter extends BoxPainter {
       } else if (decoration.strokeColor != null) {
         strokePaint.color = decoration.strokeColor!;
       }
-      canvas.drawPath(squirclePath(rect.deflate(decoration.strokeWidth / 2), c), strokePaint);
+      canvas.drawPath(
+        squirclePath(rect.deflate(decoration.strokeWidth / 2), c),
+        strokePaint,
+      );
     }
   }
 }

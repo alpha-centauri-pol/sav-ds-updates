@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,12 +9,12 @@ Completer<ui.Image>? _loader;
 
 class NoiseLayer extends StatefulWidget {
   const NoiseLayer({
-    super.key,
     required this.child,
     required this.enabled,
     required this.opacity,
     required this.scale,
     required this.curvature,
+    super.key,
   });
 
   final Widget child;
@@ -57,13 +58,16 @@ class _NoiseLayerState extends State<NoiseLayer> {
           _rebuildPainter();
         });
       }
-    } catch (_) {
+    } on Object {
       _loader = null; // allow retry on next mount
     }
   }
 
   static Future<ui.Image> _loadImage() async {
-    final data = await rootBundle.load('assets/images/noise.png');
+    // Package-qualified key so the asset resolves for any consumer of sav_ds.
+    final data = await rootBundle.load(
+      'packages/sav_ds/assets/images/noise.png',
+    );
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     return (await codec.getNextFrame()).image;
   }
@@ -71,14 +75,18 @@ class _NoiseLayerState extends State<NoiseLayer> {
   void _rebuildPainter() {
     _painter = (!widget.enabled || _image == null)
         ? null
-        : _NoisePainter(_image!, widget.opacity, widget.scale, widget.curvature);
+        : _NoisePainter(
+            _image!,
+            widget.opacity,
+            widget.scale,
+            widget.curvature,
+          );
   }
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
       isComplex: _painter != null,
-      willChange: false,
       foregroundPainter: _painter,
       child: widget.child,
     );
@@ -93,7 +101,11 @@ class _NoisePainter extends CustomPainter {
   final double scale;
   final int curvature;
 
-  late final _matrix = Matrix4.diagonal3Values(scale, scale, 1).storage;
+  late final Float64List _matrix = Matrix4.diagonal3Values(
+    scale,
+    scale,
+    1,
+  ).storage;
 
   late final _shader = ui.ImageShader(
     image,
@@ -112,10 +124,11 @@ class _NoisePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.save();
-    canvas.clipPath(squirclePath(Offset.zero & size, curvature), doAntiAlias: true);
-    canvas.drawRect(Offset.zero & size, _paint);
-    canvas.restore();
+    canvas
+      ..save()
+      ..clipPath(squirclePath(Offset.zero & size, curvature))
+      ..drawRect(Offset.zero & size, _paint)
+      ..restore();
   }
 
   @override

@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
 import '../core/tokens.dart';
+import 'internal/managed_field_state.dart';
 import 'sav_chip.dart';
 
 enum AmountInputIntent { gold, purple, neutral }
+
 enum AmountInputState { normal, error }
 
 class AmountInput extends StatefulWidget {
@@ -32,46 +36,55 @@ class AmountInput extends StatefulWidget {
   State<AmountInput> createState() => _AmountInputState();
 }
 
-class _AmountInputState extends State<AmountInput> with TickerProviderStateMixin {
-  late final TextEditingController _controller = widget.controller ?? TextEditingController();
-  late final FocusNode _focusNode = widget.focusNode ?? FocusNode();
-  bool _isFocused = false;
+class _AmountInputState extends State<AmountInput>
+    with TickerProviderStateMixin, ManagedFieldStateMixin<AmountInput> {
+  @override
+  FocusNode? get widgetFocusNode => widget.focusNode;
 
-  late final AnimationController _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-  late final AnimationController _scaleController = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
+  @override
+  TextEditingController? get widgetController => widget.controller;
+
+  late final AnimationController _shakeController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 400),
+  );
+  late final AnimationController _scaleController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 150),
+  );
 
   @override
   void initState() {
+    final initialText = controller.text;
+    final formatted = _formatNumber(initialText);
+    if (formatted != initialText) {
+      controller.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
     super.initState();
-    _focusNode.addListener(_onFocusChange);
-    _controller.addListener(_onTextChange);
   }
 
   @override
   void didUpdateWidget(AmountInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.state == AmountInputState.error && oldWidget.state != AmountInputState.error) {
+    if (widget.state == AmountInputState.error &&
+        oldWidget.state != AmountInputState.error) {
       if (!AppMotion.reduce(context)) _shakeController.forward(from: 0);
     }
   }
 
   @override
   void dispose() {
-    _focusNode.removeListener(_onFocusChange);
-    _controller.removeListener(_onTextChange);
-    if (widget.focusNode == null) _focusNode.dispose();
-    if (widget.controller == null) _controller.dispose();
     _shakeController.dispose();
     _scaleController.dispose();
     super.dispose();
   }
 
-  void _onFocusChange() {
-    if (!mounted) return;
-    setState(() {
-      _isFocused = _focusNode.hasFocus;
-    });
-    if (!_isFocused && !AppMotion.reduce(context)) {
+  @override
+  void onFocusChanged() {
+    if (!isFocused && !AppMotion.reduce(context)) {
       // Scale on commit
       _scaleController.forward(from: 0).then((_) {
         if (mounted) _scaleController.reverse();
@@ -79,19 +92,89 @@ class _AmountInputState extends State<AmountInput> with TickerProviderStateMixin
     }
   }
 
-  void _onTextChange() {
-    if (!mounted) return;
-    setState(() {});
+  String _formatNumber(String text) {
+    if (text.isEmpty) return '';
+
+    // Clean text: strip out anything that isn't a digit or a period
+    var cleanText = text.replaceAll(RegExp(r'[^0-9.]'), '');
+
+    // Handle multiple decimal points: keep only the first one
+    final points = '.'.allMatches(cleanText).length;
+    if (points > 1) {
+      final firstPointIndex = cleanText.indexOf('.');
+      final beforePoint = cleanText.substring(0, firstPointIndex);
+      final afterPoint = cleanText.substring(firstPointIndex + 1).replaceAll('.', '');
+      cleanText = '$beforePoint.$afterPoint';
+    }
+
+    final parts = cleanText.split('.');
+    var intPart = parts[0];
+    final hasDecimal = parts.length > 1;
+    final decPart = hasDecimal ? parts[1] : '';
+
+    // Strip leading zeros from the integer part
+    if (intPart.startsWith('0') && intPart.length > 1) {
+      intPart = intPart.replaceFirst(RegExp(r'^0+'), '');
+      if (intPart.isEmpty) intPart = '0';
+    }
+
+    // Prepend 0 if integer part is empty but decimal point exists
+    if (intPart.isEmpty && hasDecimal) {
+      intPart = '0';
+    }
+
+    // Format integer part with commas
+    final buffer = StringBuffer();
+    for (int i = 0; i < intPart.length; i++) {
+      if (i > 0 && (intPart.length - i) % 3 == 0) {
+        buffer.write(',');
+      }
+      buffer.write(intPart[i]);
+    }
+
+    return buffer.toString() + (hasDecimal ? '.$decPart' : '');
+  }
+
+  @override
+  void onTextChanged() {
+    final text = controller.text;
+    final formatted = _formatNumber(text);
+    if (formatted != text) {
+      final selection = controller.selection;
+
+      int nonCommaCountBeforeCursor = 0;
+      for (int i = 0; i < selection.end && i < text.length; i++) {
+        if (text[i] != ',') {
+          nonCommaCountBeforeCursor++;
+        }
+      }
+
+      int newSelectionOffset = 0;
+      int nonCommaCount = 0;
+      while (newSelectionOffset < formatted.length &&
+          nonCommaCount < nonCommaCountBeforeCursor) {
+        if (formatted[newSelectionOffset] != ',') {
+          nonCommaCount++;
+        }
+        newSelectionOffset++;
+      }
+
+      controller.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: newSelectionOffset),
+      );
+    } else {
+      widget.onChanged?.call(formatted);
+    }
   }
 
   void _handleChanged(String value) {
     if (mounted && !AppMotion.reduce(context)) {
-       // subtle scale shift on change
-       _scaleController.forward(from: 0.5).then((_) {
-         if (mounted) _scaleController.reverse();
-       });
+      // subtle scale shift on change
+      _scaleController.forward(from: 0.5).then((_) {
+        if (mounted) _scaleController.reverse();
+      });
     }
-    if (widget.onChanged != null) widget.onChanged!(value);
   }
 
   Widget _buildMotion(Widget child) {
@@ -101,12 +184,11 @@ class _AmountInputState extends State<AmountInput> with TickerProviderStateMixin
         final sinValue = math.sin(_shakeController.value * 3 * math.pi);
         final offset = sinValue * 8.0 * (1.0 - _shakeController.value);
         final scale = 1.0 + (_scaleController.value * 0.02);
-        
+
         return Transform.translate(
           offset: Offset(offset, 0),
           child: Transform.scale(
             scale: scale,
-            alignment: Alignment.center,
             child: child,
           ),
         );
@@ -115,20 +197,14 @@ class _AmountInputState extends State<AmountInput> with TickerProviderStateMixin
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final bool isError = widget.state == AmountInputState.error;
+  ({Color fallback, LinearGradient? gradient}) _resolveColors(bool isError) {
+    if (isError) return (fallback: AppColors.bronzeError, gradient: null);
 
-    // Define gradients based on intent
-    LinearGradient? textGradient;
-    Color fallbackColor = AppColors.obsidian;
-
-    if (isError) {
-      fallbackColor = AppColors.bronzeError;
-    } else {
-      switch (widget.intent) {
-        case AmountInputIntent.gold:
-          textGradient = const LinearGradient(
+    switch (widget.intent) {
+      case AmountInputIntent.gold:
+        return (
+          fallback: AppColors.obsidian,
+          gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             stops: [0.3016, 0.6919, 0.8871],
@@ -137,10 +213,12 @@ class _AmountInputState extends State<AmountInput> with TickerProviderStateMixin
               AppColors.goldStandard700,
               AppColors.goldStandard500,
             ],
-          );
-          break;
-        case AmountInputIntent.purple:
-          textGradient = const LinearGradient(
+          )
+        );
+      case AmountInputIntent.purple:
+        return (
+          fallback: AppColors.obsidian,
+          gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             stops: [0.3016, 0.6919, 0.8871],
@@ -149,136 +227,183 @@ class _AmountInputState extends State<AmountInput> with TickerProviderStateMixin
               AppColors.purplePower700,
               AppColors.purplePower500,
             ],
-          );
-          break;
-        case AmountInputIntent.neutral:
-          fallbackColor = AppColors.obsidian;
-          break;
-      }
+          )
+        );
+      case AmountInputIntent.neutral:
+        return (fallback: AppColors.obsidian, gradient: null);
     }
+  }
 
-    final Color borderStrokeColor = isError
+  Widget _buildInputArea({
+    required bool isError,
+    required Color fallbackColor,
+    required LinearGradient? textGradient,
+  }) {
+    final borderStrokeColor = isError
         ? AppColors.bronzeError
-        : (_isFocused ? AppColors.obsidian : AppColors.hairline);
+        : (isFocused ? AppColors.obsidian : AppColors.hairline);
 
-    // Main text style for numbers (Obviously Narrow Semibold)
-    final TextStyle amountStyle = AppTextStyles.obviouslyNarrow.copyWith(
-      fontSize: 48,
-      color: textGradient != null ? Colors.white : fallbackColor,
-    );
+    final arrowTurns = isError
+        ? 0.75
+        : (widget.intent == AmountInputIntent.purple ? 0.5 : 0.0);
 
-    final Widget textField = TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      onChanged: _handleChanged,
-      textAlign: TextAlign.left,
-      style: amountStyle.copyWith(color: Colors.transparent),
-      cursorColor: isError ? AppColors.bronzeError : AppColors.obsidian,
-      cursorWidth: 2.0,
-      decoration: InputDecoration(
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: EdgeInsets.zero,
-        hintText: _controller.text.isEmpty ? '0' : null,
-        hintStyle: amountStyle.copyWith(
-          color: textGradient != null ? Colors.white.withOpacity(0.3) : fallbackColor.withOpacity(0.3),
+    return AnimatedContainer(
+      duration: AppMotion.duration(context, const Duration(milliseconds: 200)),
+      curve: AppMotion.curveOut,
+      width: 260,
+      padding: const EdgeInsets.only(bottom: AppSpacing.md - 2), // 6
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: borderStrokeColor,
+            width: isFocused ? 2.0 : 1.0,
+          ),
         ),
       ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedRotation(
+            turns: arrowTurns,
+            duration: AppMotion.duration(
+              context,
+              const Duration(milliseconds: 300),
+            ),
+            curve: AppMotion.curveOut,
+            child: TweenAnimationBuilder<Color?>(
+              duration: AppMotion.duration(
+                context,
+                const Duration(milliseconds: 300),
+              ),
+              tween: ColorTween(
+                end: isError
+                    ? AppColors.bronzeError
+                    : (widget.intent == AmountInputIntent.gold
+                        ? AppColors.goldStandard500
+                        : (widget.intent == AmountInputIntent.purple
+                            ? AppColors.purplePower500
+                            : AppColors.slate)),
+              ),
+              builder: (context, color, child) {
+                return Icon(
+                  Icons.arrow_upward_rounded,
+                  size: 16,
+                  color: color,
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md - 2), // 6
+          Text(
+            widget.currency,
+            style: AppTextStyles.bodyBold.copyWith(
+              fontSize: 14,
+              color: AppColors.slate,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md), // 8
+          SizedBox(
+            width: 160,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxWidth = constraints.maxWidth;
+                final textToMeasure = controller.text.isEmpty ? '0' : controller.text;
+
+                final baseStyle = AppTextStyles.obviouslyLargeText.copyWith(
+                  fontSize: 48,
+                );
+
+                final textPainter = TextPainter(
+                  text: TextSpan(text: textToMeasure, style: baseStyle),
+                  textDirection: TextDirection.ltr,
+                  maxLines: 1,
+                )..layout();
+
+                final naturalWidth = textPainter.width;
+                const baseFontSize = 48.0;
+                const minFontSize = 18.0;
+
+                final scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1.0;
+                final fontSize = (baseFontSize * scale).clamp(minFontSize, baseFontSize);
+
+                final amountStyle = AppTextStyles.obviouslyLargeText.copyWith(
+                  fontSize: fontSize,
+                  color: textGradient != null ? Colors.white : fallbackColor,
+                );
+
+                final Widget textField = TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: _handleChanged,
+                  textAlign: TextAlign.left,
+                  style: amountStyle.copyWith(color: Colors.transparent),
+                  cursorColor: isError ? AppColors.bronzeError : AppColors.obsidian,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: controller.text.isEmpty ? '0' : null,
+                    hintStyle: amountStyle.copyWith(
+                      color: textGradient != null
+                          ? Colors.white.withValues(alpha: 0.3)
+                          : fallbackColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                );
+
+                final Widget animatedText = AnimatedAmountText(
+                  text: controller.text,
+                  style: amountStyle,
+                );
+
+                final shadedAmountText = textGradient != null
+                    ? ShaderMask(
+                        shaderCallback: (bounds) => textGradient.createShader(bounds),
+                        child: animatedText,
+                      )
+                    : animatedText;
+
+                return SizedBox(
+                  height: 58,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        if (controller.text.isNotEmpty)
+                          IgnorePointer(child: shadedAmountText),
+                        textField,
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
+  }
 
-    // Render the animated characters
-    final Widget animatedText = AnimatedAmountText(
-      text: _controller.text,
-      style: amountStyle,
-    );
-
-    // Apply gradient text mask if needed
-    final Widget shadedAmountText = textGradient != null
-        ? ShaderMask(
-            shaderCallback: (bounds) => textGradient!.createShader(bounds),
-            child: animatedText,
-          )
-        : animatedText;
-
-    final double arrowTurns = isError 
-        ? 0.75 
-        : (widget.intent == AmountInputIntent.purple ? 0.5 : 0.0);
+  @override
+  Widget build(BuildContext context) {
+    final isError = widget.state == AmountInputState.error;
+    final colors = _resolveColors(isError);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         _buildMotion(
-          AnimatedContainer(
-            duration: AppMotion.duration(context, const Duration(milliseconds: 200)),
-            curve: AppMotion.curveOut,
-            width: 260,
-            padding: const EdgeInsets.only(bottom: 6),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: borderStrokeColor,
-                  width: _isFocused ? 2.0 : 1.0,
-                ),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedRotation(
-                  turns: arrowTurns,
-                  duration: AppMotion.duration(context, const Duration(milliseconds: 300)),
-                  curve: AppMotion.curveOut,
-                  child: TweenAnimationBuilder<Color?>(
-                    duration: AppMotion.duration(context, const Duration(milliseconds: 300)),
-                    tween: ColorTween(
-                      end: isError
-                          ? AppColors.bronzeError
-                          : (widget.intent == AmountInputIntent.gold
-                              ? AppColors.goldStandard500
-                              : (widget.intent == AmountInputIntent.purple
-                                  ? AppColors.purplePower500
-                                  : AppColors.slate)),
-                    ),
-                    builder: (context, color, child) {
-                      return Icon(
-                        Icons.arrow_upward_rounded,
-                        size: 16,
-                        color: color,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  widget.currency,
-                  style: AppTextStyles.bodyBold.copyWith(
-                    fontSize: 14,
-                    color: AppColors.slate,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 160,
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      if (_controller.text.isNotEmpty)
-                        IgnorePointer(
-                          child: shadedAmountText,
-                        ),
-                      textField,
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          _buildInputArea(
+            isError: isError,
+            fallbackColor: colors.fallback,
+            textGradient: colors.gradient,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.lg), // 12
         if (widget.nudgeText != null)
           SavChip(
             label: widget.nudgeText!,
@@ -290,7 +415,7 @@ class _AmountInputState extends State<AmountInput> with TickerProviderStateMixin
             ),
           ),
         if (widget.helperText != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.md), // 8
           Text(
             widget.helperText!,
             style: AppTextStyles.captionRegular.copyWith(
@@ -304,60 +429,65 @@ class _AmountInputState extends State<AmountInput> with TickerProviderStateMixin
 }
 
 class AnimatedAmountText extends StatelessWidget {
-  final String text;
-  final TextStyle style;
-
   const AnimatedAmountText({
-    super.key,
     required this.text,
     required this.style,
+    super.key,
   });
+  final String text;
+  final TextStyle style;
 
   @override
   Widget build(BuildContext context) {
     if (text.isEmpty) return const SizedBox.shrink();
     final reduceMotion = AppMotion.reduce(context);
     final chars = text.split('');
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(chars.length, (index) {
-        final char = chars[index];
-        return AnimatedSwitcher(
-          duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 150),
-          switchInCurve: AppMotion.curveOut,
-          switchOutCurve: AppMotion.curveGentleOut,
-          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-            return Stack(
-              alignment: Alignment.centerLeft,
-              children: <Widget>[
-                ...previousChildren,
-                if (currentChild != null) currentChild,
-              ],
-            );
-          },
-          transitionBuilder: (child, animation) {
-            if (reduceMotion) {
-              return FadeTransition(opacity: animation, child: child);
-            }
-            final isEntering = child.key == ValueKey('${index}_$char');
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: Offset(0, isEntering ? 0.25 : -0.25),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
-            );
-          },
-          child: Text(
-            char,
-            key: ValueKey('${index}_$char'),
-            style: style,
-          ),
-        );
-      }),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const NeverScrollableScrollPhysics(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(chars.length, (index) {
+          final char = chars[index];
+          return AnimatedSwitcher(
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 150),
+            switchInCurve: AppMotion.curveOut,
+            switchOutCurve: AppMotion.curveGentleOut,
+            layoutBuilder: (currentChild, previousChildren) {
+              return Stack(
+                alignment: Alignment.centerLeft,
+                children: <Widget>[
+                  ...previousChildren,
+                  ?currentChild,
+                ],
+              );
+            },
+            transitionBuilder: (child, animation) {
+              if (reduceMotion) {
+                return FadeTransition(opacity: animation, child: child);
+              }
+              final isEntering = child.key == ValueKey('${index}_$char');
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: Offset(0, isEntering ? 0.25 : -0.25),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              char,
+              key: ValueKey('${index}_$char'),
+              style: style,
+            ),
+          );
+        }),
+      ),
     );
   }
 }

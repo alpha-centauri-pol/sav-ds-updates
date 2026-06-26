@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:sav_ds/sav_ds.dart';
 
 class DevColorPicker extends StatefulWidget {
   const DevColorPicker({
-    super.key,
     required this.initialColor,
     required this.onChanged,
+    super.key,
   });
 
   final Color initialColor;
@@ -53,15 +54,16 @@ class _DevColorPickerState extends State<DevColorPicker> {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Presets row
-        const Text(
+        Text(
           'Presets:',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          style: AppTextStyles.captionRegular.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Row(
           spacing: 8,
           children: presets.map((color) {
-            final isSelected = color.toARGB32() == _hsvColor.toColor().toARGB32();
+            final isSelected =
+                color.toARGB32() == _hsvColor.toColor().toARGB32();
             return GestureDetector(
               onTap: () => _updateColor(HSVColor.fromColor(color)),
               child: Container(
@@ -84,7 +86,6 @@ class _DevColorPickerState extends State<DevColorPicker> {
         Text('Hue: ${_hsvColor.hue.round()}°'),
         Slider(
           value: _hsvColor.hue,
-          min: 0,
           max: 360,
           onChanged: (val) => _updateColor(_hsvColor.withHue(val)),
         ),
@@ -92,24 +93,18 @@ class _DevColorPickerState extends State<DevColorPicker> {
         Text('Saturation: ${(_hsvColor.saturation * 100).round()}%'),
         Slider(
           value: _hsvColor.saturation,
-          min: 0,
-          max: 1,
           onChanged: (val) => _updateColor(_hsvColor.withSaturation(val)),
         ),
         // Value slider
         Text('Value: ${(_hsvColor.value * 100).round()}%'),
         Slider(
           value: _hsvColor.value,
-          min: 0,
-          max: 1,
           onChanged: (val) => _updateColor(_hsvColor.withValue(val)),
         ),
         // Alpha slider
         Text('Alpha (Opacity): ${(_hsvColor.alpha * 100).round()}%'),
         Slider(
           value: _hsvColor.alpha,
-          min: 0,
-          max: 1,
           onChanged: (val) => _updateColor(_hsvColor.withAlpha(val)),
         ),
       ],

@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
 
-/// Color variables exported from the Sav Design System ("🎨 Colors" collection).
+/// Color variables exported from the Sav Design System
+/// ("🎨 Colors" collection).
 ///
 /// Values mirror the Figma "Light" mode. The handful of tokens that differ in
-/// Dark mode are the `savTransparent*` ramp (ink overlay → light overlay); those
-/// will move behind a `ThemeExtension` when dark mode is built. Everything else
-/// is mode-agnostic in the source file.
+/// Dark mode are the `savTransparent*` ramp (ink overlay → light overlay);
+/// those will move behind a `ThemeExtension` when dark mode is built.
+/// Everything else is mode-agnostic in the source file.
 abstract final class AppColors {
   // — Sav Primary ————————————————————————————————————————
-  static const white    = Color(0xFFFFFFFF); // sav-primary-white
-  static const lumen    = Color(0xFFF6F6F6); // sav-primary-lumen
+  static const white = Color(0xFFFFFFFF); // sav-primary-white
+  static const lumen = Color(0xFFF6F6F6); // sav-primary-lumen
   static const sterling = Color(0xFFB4B4B4); // sav-primary-sterling
-  static const slate    = Color(0xFF7A7A7A); // sav-primary-slate
+  static const slate = Color(0xFF7A7A7A); // sav-primary-slate
   static const obsidian = Color(0xFF1F1F1F); // sav-primary-obsidian
 
   // — Sav Transparent (ink overlay, Light mode) ——————————————
   // Base ink is #1F1F1F (obsidian) at increasing opacity.
-  static const transparent0  = Color(0x001F1F1F);
-  static const transparent2  = Color(0x051F1F1F); // 0.02
-  static const transparent4  = Color(0x0A1F1F1F); // 0.04
-  static const transparent8  = Color(0x141F1F1F); // 0.08
+  static const transparent0 = Color(0x001F1F1F);
+  static const transparent2 = Color(0x051F1F1F); // 0.02
+  static const transparent4 = Color(0x0A1F1F1F); // 0.04
+  static const transparent6 = Color(0x0F1F1F1F); // 0.06
+  static const transparent8 = Color(0x141F1F1F); // 0.08
   static const transparent12 = Color(0x1F1F1F1F); // 0.12
   static const transparent20 = Color(0x331F1F1F); // 0.20
   static const transparent40 = Color(0x661F1F1F); // 0.40
@@ -80,13 +82,13 @@ abstract final class AppColors {
   static const bronzeBounty800 = Color(0xFF331704);
 
   // — Dark Transparent Overlays —————————————————————————
-  static const darkTransparent4  = Color(0x0A1F1F1F); // #1f1f1f0a
+  static const darkTransparent4 = Color(0x0A1F1F1F); // #1f1f1f0a
   static const darkTransparent40 = Color(0x661F1F1F); // #1f1f1f66
   static const darkTransparent60 = Color(0x991F1F1F); // #1f1f1f99
   static const darkTransparent80 = Color(0xCC1F1F1F); // #1f1f1fcc
 
   // — Semantic Intent Colors ————————————————————————————
-  static const neutral = obsidian;
+  static const Color neutral = obsidian;
   static const positive = Color(0xFF437A61); // lushCapital600
   static const negative = Color(0xFF935629); // bronzeBounty600 (bronze error)
   static const info = Color(0xFF2E79DC); // wealthWeave600

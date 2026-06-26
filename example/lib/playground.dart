@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../core/tokens.dart';
+import 'package:sav_ds/sav_ds.dart';
 import 'color_picker.dart';
-import 'global_config.dart';
+import 'playground_registry.dart';
 
 class PropSpec {
   const PropSpec({
     required this.name,
     required this.type,
-    this.options,
     required this.description,
+    this.options,
   });
   final String name;
   final String type;
@@ -19,12 +19,12 @@ class PropSpec {
 
 class PlaygroundStage extends StatelessWidget {
   const PlaygroundStage({
-    super.key,
     required this.id,
     required this.preview,
     required this.controls,
     required this.code,
     required this.props,
+    super.key,
   });
 
   final String id;
@@ -53,7 +53,7 @@ class PlaygroundStage extends StatelessWidget {
           ),
           child: Center(child: preview),
         ),
-        
+
         // Controls Area
         Container(
           padding: const EdgeInsets.all(20),
@@ -70,10 +70,10 @@ class PlaygroundStage extends StatelessWidget {
             children: controls,
           ),
         ),
-        
+
         // Code Block
         _CodeBlock(code: code),
-        
+
         // Props Table
         _PropsTable(props: props),
       ],
@@ -121,9 +121,14 @@ class _CodeBlockState extends State<_CodeBlock> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Code Snippet', style: AppTextStyles.bodyBold.copyWith(color: Colors.white)),
+                  Text(
+                    'Code Snippet',
+                    style: AppTextStyles.bodyBold.copyWith(color: Colors.white),
+                  ),
                   Icon(
-                    _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    _expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: Colors.white,
                   ),
                 ],
@@ -139,12 +144,12 @@ class _CodeBlockState extends State<_CodeBlock> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: SelectableText(
                       widget.code,
-                      style: const TextStyle(
+                      style: AppTextStyles.bodyRegular.copyWith(
                         fontFamily: 'monospace',
                         fontSize: 13,
                         color: Colors.greenAccent,
@@ -155,7 +160,11 @@ class _CodeBlockState extends State<_CodeBlock> {
                     top: 8,
                     right: 8,
                     child: IconButton(
-                      icon: Icon(_copied ? Icons.check : Icons.copy, color: Colors.white, size: 16),
+                      icon: Icon(
+                        _copied ? Icons.check : Icons.copy,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       onPressed: _copy,
                     ),
                   ),
@@ -202,7 +211,9 @@ class _PropsTableState extends State<_PropsTable> {
                 children: [
                   Text('Props API', style: AppTextStyles.bodyBold),
                   Icon(
-                    _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    _expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: AppColors.slate,
                   ),
                 ],
@@ -219,19 +230,57 @@ class _PropsTableState extends State<_PropsTable> {
                     headingRowHeight: 36,
                     dataRowMinHeight: 36,
                     dataRowMaxHeight: 48,
-                    columns: const [
-                      DataColumn(label: Text('Prop', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Options', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
+                    columns: [
+                      DataColumn(
+                        label: Text(
+                          'Prop',
+                          style: AppTextStyles.bodyRegular,
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Type',
+                          style: AppTextStyles.bodyRegular,
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Options',
+                          style: AppTextStyles.bodyRegular,
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Description',
+                          style: AppTextStyles.bodyRegular,
+                        ),
+                      ),
                     ],
                     rows: widget.props.map((p) {
-                      return DataRow(cells: [
-                        DataCell(Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontFamily: 'monospace'))),
-                        DataCell(Text(p.type, style: const TextStyle(color: AppColors.wealthWeave600, fontFamily: 'monospace'))),
-                        DataCell(Text(p.options ?? '-')),
-                        DataCell(Text(p.description)),
-                      ]);
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Text(
+                              p.name,
+                              style: AppTextStyles.bodyRegular.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              p.type,
+                              style: AppTextStyles.bodyRegular.copyWith(
+                                color: AppColors.wealthWeave600,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ),
+                          DataCell(Text(p.options ?? '-')),
+                          DataCell(Text(p.description)),
+                        ],
+                      );
                     }).toList(),
                   ),
                 ),
@@ -247,12 +296,12 @@ class _PropsTableState extends State<_PropsTable> {
 
 class PropEnum<T> extends StatelessWidget {
   const PropEnum({
-    super.key,
     required this.label,
     required this.value,
     required this.values,
     required this.labelOf,
     required this.onChanged,
+    super.key,
   });
 
   final String label;
@@ -266,7 +315,7 @@ class PropEnum<T> extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption550),
+        Text(label, style: AppTextStyles.captionRegular),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -289,10 +338,10 @@ class PropEnum<T> extends StatelessWidget {
 
 class PropToggle extends StatelessWidget {
   const PropToggle({
-    super.key,
     required this.label,
     required this.value,
     required this.onChanged,
+    super.key,
   });
 
   final String label;
@@ -304,7 +353,7 @@ class PropToggle extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: AppTextStyles.caption550),
+        Text(label, style: AppTextStyles.captionRegular),
         Switch(
           value: value,
           onChanged: onChanged,
@@ -316,10 +365,10 @@ class PropToggle extends StatelessWidget {
 
 class PropText extends StatelessWidget {
   const PropText({
-    super.key,
     required this.label,
     required this.value,
     required this.onChanged,
+    super.key,
   });
 
   final String label;
@@ -331,11 +380,13 @@ class PropText extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption550),
+        Text(label, style: AppTextStyles.captionRegular),
         const SizedBox(height: 8),
         TextField(
           controller: TextEditingController(text: value)
-            ..selection = TextSelection.fromPosition(TextPosition(offset: value.length)),
+            ..selection = TextSelection.fromPosition(
+              TextPosition(offset: value.length),
+            ),
           onChanged: onChanged,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
@@ -349,13 +400,13 @@ class PropText extends StatelessWidget {
 
 class PropSlider extends StatelessWidget {
   const PropSlider({
-    super.key,
     required this.label,
     required this.value,
     required this.min,
     required this.max,
-    this.divisions,
     required this.onChanged,
+    super.key,
+    this.divisions,
   });
 
   final String label;
@@ -370,7 +421,10 @@ class PropSlider extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label: ${value.toStringAsFixed(1)}', style: AppTextStyles.caption550),
+        Text(
+          '$label: ${value.toStringAsFixed(1)}',
+          style: AppTextStyles.captionRegular,
+        ),
         Slider(
           value: value,
           min: min,
@@ -385,10 +439,10 @@ class PropSlider extends StatelessWidget {
 
 class PropColor extends StatefulWidget {
   const PropColor({
-    super.key,
     required this.label,
     required this.value,
     required this.onChanged,
+    super.key,
   });
 
   final String label;
@@ -410,7 +464,7 @@ class _PropColorState extends State<PropColor> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(widget.label, style: AppTextStyles.caption550),
+            Text(widget.label, style: AppTextStyles.captionRegular),
             Row(
               children: [
                 if (widget.value != null)
@@ -430,11 +484,15 @@ class _PropColorState extends State<PropColor> {
                     child: const Text('Clear'),
                   ),
                 IconButton(
-                  icon: Icon(_expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+                  icon: Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                  ),
                   onPressed: () => setState(() => _expanded = !_expanded),
                 ),
               ],
-            )
+            ),
           ],
         ),
         if (_expanded)

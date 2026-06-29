@@ -21,6 +21,9 @@ class AmountInput extends StatefulWidget {
     this.controller,
     this.focusNode,
     this.onChanged,
+    this.enableGradient = true,
+    this.enableMotion = true,
+    this.enableTextAnimation = true,
   });
 
   final String currency;
@@ -31,6 +34,9 @@ class AmountInput extends StatefulWidget {
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final ValueChanged<String>? onChanged;
+  final bool enableGradient;
+  final bool enableMotion;
+  final bool enableTextAnimation;
 
   @override
   State<AmountInput> createState() => _AmountInputState();
@@ -178,6 +184,7 @@ class _AmountInputState extends State<AmountInput>
   }
 
   Widget _buildMotion(Widget child) {
+    if (!widget.enableMotion) return child;
     return AnimatedBuilder(
       animation: Listenable.merge([_shakeController, _scaleController]),
       builder: (context, child) {
@@ -356,9 +363,10 @@ class _AmountInputState extends State<AmountInput>
                 final Widget animatedText = AnimatedAmountText(
                   text: controller.text,
                   style: amountStyle,
+                  enableAnimation: widget.enableTextAnimation,
                 );
 
-                final shadedAmountText = textGradient != null
+                final shadedAmountText = (textGradient != null && widget.enableGradient)
                     ? ShaderMask(
                         shaderCallback: (bounds) => textGradient.createShader(bounds),
                         child: animatedText,
@@ -432,10 +440,12 @@ class AnimatedAmountText extends StatelessWidget {
   const AnimatedAmountText({
     required this.text,
     required this.style,
+    this.enableAnimation = true,
     super.key,
   });
   final String text;
   final TextStyle style;
+  final bool enableAnimation;
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +460,7 @@ class AnimatedAmountText extends StatelessWidget {
         children: List.generate(chars.length, (index) {
           final char = chars[index];
           return AnimatedSwitcher(
-            duration: reduceMotion
+            duration: (reduceMotion || !enableAnimation)
                 ? Duration.zero
                 : const Duration(milliseconds: 150),
             switchInCurve: AppMotion.curveOut,
@@ -465,7 +475,7 @@ class AnimatedAmountText extends StatelessWidget {
               );
             },
             transitionBuilder: (child, animation) {
-              if (reduceMotion) {
+              if (reduceMotion || !enableAnimation) {
                 return FadeTransition(opacity: animation, child: child);
               }
               final isEntering = child.key == ValueKey('${index}_$char');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sav_ds/sav_ds.dart';
+import 'perf_lab/perf_lab_screen.dart';
 import 'playground_registry.dart';
 import 'playgrounds.dart';
 
@@ -394,6 +395,21 @@ class GlobalControlsSheet extends StatelessWidget {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Copied to clipboard!')),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          AppButton(
+            label: 'Open Perf Lab',
+            variant: AppButtonVariant.secondary,
+            width: AppButtonWidth.full,
+            icon: AppButtonIcon.leading,
+            leading: const Icon(Icons.speed_rounded),
+            onPressed: () {
+              Navigator.pop(context); // close sheet
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PerfLabScreen()),
               );
             },
           ),

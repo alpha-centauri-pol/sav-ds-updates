@@ -24,6 +24,7 @@ class SavChip extends StatefulWidget {
     this.showLgNoise = false,
     this.animateEntry = false,
     this.entryDelay,
+    this.enableSurface = true,
   });
 
   final String label;
@@ -39,6 +40,7 @@ class SavChip extends StatefulWidget {
   final bool showLgNoise;
   final bool animateEntry;
   final Duration? entryDelay;
+  final bool enableSurface;
 
   @override
   State<SavChip> createState() => _SavChipState();
@@ -154,9 +156,12 @@ class _SavChipState extends State<SavChip> with SingleTickerProviderStateMixin {
       return Container(
         width: tokens.leadingContainerSize,
         height: tokens.leadingContainerSize,
-        decoration: SavSurface(
+        decoration: widget.enableSurface ? SavSurface(
           curvature: widget.size == SavChipSize.sm ? 4 : 6,
           fillColor: AppColors.transparent4,
+        ) : BoxDecoration(
+          borderRadius: BorderRadius.circular(widget.size == SavChipSize.sm ? 4 : 6),
+          color: AppColors.transparent4,
         ),
         child: Center(
           child: Icon(
@@ -180,11 +185,15 @@ class _SavChipState extends State<SavChip> with SingleTickerProviderStateMixin {
     return Container(
       height: tokens.height,
       padding: EdgeInsets.symmetric(horizontal: tokens.padX),
-      decoration: SavSurface(
+      decoration: widget.enableSurface ? SavSurface(
         curvature: tokens.curvature,
         fillColor: bg,
         strokeColor: stroke,
         strokeWidth: stroke != null ? 1.0 : 0.0,
+      ) : BoxDecoration(
+        borderRadius: BorderRadius.circular(tokens.curvature.toDouble()),
+        color: bg,
+        border: stroke != null ? Border.all(color: stroke, width: 1.0) : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -37,6 +37,9 @@ class InputField extends StatefulWidget {
     this.leftSquircleIcon,
     this.rightIcon,
     this.isOneRow = true,
+    this.enableSurface = true,
+    this.enableShadows = true,
+    this.enableLeftSquircleNoise = true,
   });
 
   // Pre-configured SearchField constructor
@@ -79,6 +82,9 @@ class InputField extends StatefulWidget {
   final Widget? leftSquircleIcon;
   final Widget? rightIcon;
   final bool isOneRow;
+  final bool enableSurface;
+  final bool enableShadows;
+  final bool enableLeftSquircleNoise;
 
   @override
   State<InputField> createState() => _InputFieldState();
@@ -229,39 +235,45 @@ class _InputFieldState extends State<InputField>
   }
 
   Widget _buildLeftSquircle() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 10, right: 12),
-      child: NoiseLayer(
-        enabled: true,
-        opacity: 0.8,
-        scale: 1,
+    Widget squircle = DecoratedBox(
+      decoration: const SavSurface(
         curvature: 10,
-        child: DecoratedBox(
-          decoration: const SavSurface(
-            curvature: 10,
-            fillColor: AppColors.obsidian,
-          ),
-          child: DecoratedBox(
-            decoration: SavSurface(
-              curvature: 10,
-              fillGradient: AppGradients.leftSquircleOverlay,
-            ),
-            child: SizedBox(
-              width: 36,
-              height: 36,
-              child: Center(
-                child: IconTheme(
-                  data: const IconThemeData(
-                    size: 24,
-                    color: AppColors.white,
-                  ),
-                  child: widget.leftSquircleIcon ?? const SizedBox.shrink(),
-                ),
+        fillColor: AppColors.obsidian,
+      ),
+      child: DecoratedBox(
+        decoration: SavSurface(
+          curvature: 10,
+          fillGradient: AppGradients.leftSquircleOverlay,
+        ),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Center(
+            child: IconTheme(
+              data: const IconThemeData(
+                size: 24,
+                color: AppColors.white,
               ),
+              child: widget.leftSquircleIcon ?? const SizedBox.shrink(),
             ),
           ),
         ),
       ),
+    );
+
+    if (widget.enableLeftSquircleNoise) {
+      squircle = NoiseLayer(
+        enabled: true,
+        opacity: 0.8,
+        scale: 1,
+        curvature: 10,
+        child: squircle,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 10, right: 12),
+      child: squircle,
     );
   }
 
@@ -381,18 +393,25 @@ class _InputFieldState extends State<InputField>
         : null;
 
     final fieldDecoration = widget.variant == InputFieldVariant.boxed
-        ? SavSurface(
+        ? (widget.enableSurface ? SavSurface(
             fillGradient: AppGradients.inputBgGradient,
             strokeColor: strokeColor,
             strokeGradient: strokeGradient,
             strokeWidth: strokeWidth,
-            dropShadowColor: AppColors.transparent4,
-            dropShadowOffset: const Offset(1, 1),
-            dropShadowBlur: 2,
-            innerShadowColor: AppColors.transparent6,
-            innerShadowOffset: const Offset(-1, -1),
-            innerShadowBlur: 2,
-          )
+            dropShadowColor: widget.enableShadows ? AppColors.transparent4 : null,
+            dropShadowOffset: widget.enableShadows ? const Offset(1, 1) : Offset.zero,
+            dropShadowBlur: widget.enableShadows ? 2 : 0,
+            innerShadowColor: widget.enableShadows ? AppColors.transparent6 : null,
+            innerShadowOffset: widget.enableShadows ? const Offset(-1, -1) : Offset.zero,
+            innerShadowBlur: widget.enableShadows ? 2 : 0,
+          ) : BoxDecoration(
+            color: AppColors.lumen, // approx fillGradient base
+            borderRadius: BorderRadius.circular(10), // approx curvature
+            border: Border.all(
+              color: strokeColor ?? AppColors.hairline,
+              width: strokeWidth,
+            ),
+          ))
         : BoxDecoration(
             border: Border(
               bottom: BorderSide(

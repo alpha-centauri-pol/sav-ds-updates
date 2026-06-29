@@ -17,7 +17,6 @@ class MorphingText extends StatelessWidget {
   Widget build(BuildContext context) {
     final reduceMotion = AppMotion.reduce(context);
     final chars = text.split('');
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(chars.length, (index) {

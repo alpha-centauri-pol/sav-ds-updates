@@ -13,12 +13,16 @@ class SavBadge extends StatelessWidget {
     this.size = BadgeSize.sm,
     this.value,
     this.color = AppColors.obsidian,
+    this.enableSurface = true,
+    this.enableAnimation = true,
   });
 
   final BadgeType type;
   final BadgeSize size;
   final String? value;
   final Color color;
+  final bool enableSurface;
+  final bool enableAnimation;
 
   @override
   Widget build(BuildContext context) {
@@ -57,28 +61,34 @@ class SavBadge extends StatelessWidget {
         height: height,
         constraints: BoxConstraints(minWidth: minWidth),
         padding: const EdgeInsets.symmetric(horizontal: 6),
-        decoration: SavSurface(
+        decoration: enableSurface ? SavSurface(
           curvature: curvature,
           fillColor: color,
+        ) : BoxDecoration(
+          borderRadius: BorderRadius.circular(curvature.toDouble()),
+          color: color,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedSwitcher(
-              duration: AppMotion.duration(context, AppMotion.durationHigh),
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.8, end: 1).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: AppMotion.curveOut,
+              duration: enableAnimation ? AppMotion.duration(context, AppMotion.durationHigh) : Duration.zero,
+              transitionBuilder: (child, animation) {
+                if (!enableAnimation) return child;
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.8, end: 1).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: AppMotion.curveOut,
+                      ),
                     ),
+                    child: child,
                   ),
-                  child: child,
-                ),
-              ),
+                );
+              },
               child: Text(
                 value ?? '',
                 key: ValueKey(value ?? ''),

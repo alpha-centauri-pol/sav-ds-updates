@@ -89,6 +89,16 @@ class AppMotion {
           duration: reduceMotion ? Duration.zero : (duration ?? durationMedium),
           switchInCurve: curveOut,
           switchOutCurve: curveGentleOut,
+          layoutBuilder: (currentChild, previousChildren) {
+            return Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            );
+          },
           transitionBuilder: (child, animation) {
             if (reduceMotion) {
               return FadeTransition(

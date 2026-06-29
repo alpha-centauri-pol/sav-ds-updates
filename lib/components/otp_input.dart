@@ -15,6 +15,8 @@ class OTPInput extends StatefulWidget {
     this.controller,
     this.onChanged,
     this.onCompleted,
+    this.gradientDigits = true,
+    this.animateCells = true,
   });
 
   final int length;
@@ -22,6 +24,8 @@ class OTPInput extends StatefulWidget {
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onCompleted;
+  final bool gradientDigits;
+  final bool animateCells;
 
   @override
   State<OTPInput> createState() => _OTPInputState();
@@ -35,6 +39,11 @@ class _OTPInputState extends State<OTPInput>
   TextEditingController? get widgetController => widget.controller;
 
   bool _wasCompleted = false;
+
+  late final Paint _gradientPaint = Paint()
+    ..shader = AppGradients.otpTextGradient.createShader(
+      Rect.fromLTWH(0, 0, 1, AppTextStyles.obviouslyOtp.fontSize ?? 40.0),
+    );
 
   late final AnimationController _shakeController =
       AnimationController.unbounded(vsync: this);
@@ -108,14 +117,6 @@ class _OTPInputState extends State<OTPInput>
 
     Widget cellContent;
     if (char.isNotEmpty) {
-      final textWidget = Text(
-        char,
-        key: ValueKey(char),
-        style: AppTextStyles.obviouslyOtp.copyWith(
-          color: Colors.white,
-        ),
-      );
-
       cellContent = isError
           ? Text(
               char,
@@ -124,11 +125,13 @@ class _OTPInputState extends State<OTPInput>
                 color: AppColors.bronzeError,
               ),
             )
-          : ShaderMask(
-              shaderCallback: (bounds) => AppGradients.otpTextGradient.createShader(
-                Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+          : Text(
+              char,
+              key: ValueKey(char),
+              style: AppTextStyles.obviouslyOtp.copyWith(
+                foreground: widget.gradientDigits ? _gradientPaint : null,
+                color: widget.gradientDigits ? null : AppColors.obsidian,
               ),
-              child: textWidget,
             );
     } else {
       cellContent = Text(
@@ -140,32 +143,49 @@ class _OTPInputState extends State<OTPInput>
       );
     }
 
-    return AnimatedScale(
-      scale: (isActive && !reduceMotion) ? 1.08 : 1.0,
-      duration: AppMotion.duration(context, AppMotion.durationHigh),
-      curve: AppMotion.curveOut,
-      child: Container(
-        height: 61,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: AnimatedSwitcher(
-          duration: AppMotion.duration(context, AppMotion.durationHigh),
-          transitionBuilder: (child, animation) {
-            if (reduceMotion) {
-              return FadeTransition(opacity: animation, child: child);
-            }
-            return FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.85, end: 1).animate(animation),
-                child: child,
-              ),
-            );
-          },
-          child: cellContent,
-        ),
-      ),
+    final scale = (isActive && !reduceMotion) ? 1.08 : 1.0;
+    final canScale = isActive ||
+        (index == value.length - 1) ||
+        (index == value.length + 1);
+
+    final containerChild = Container(
+      height: 61,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: widget.animateCells ? AnimatedSwitcher(
+        duration: AppMotion.duration(context, AppMotion.durationHigh),
+        transitionBuilder: (child, animation) {
+          if (reduceMotion) {
+            return FadeTransition(opacity: animation, child: child);
+          }
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.85, end: 1).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: cellContent,
+      ) : cellContent,
     );
+
+    if (canScale && !reduceMotion && widget.animateCells) {
+      return AnimatedScale(
+        scale: scale,
+        duration: AppMotion.duration(context, AppMotion.durationHigh),
+        curve: AppMotion.curveOut,
+        child: containerChild,
+      );
+    } else {
+      if (scale == 1.0) {
+        return containerChild;
+      }
+      return Transform.scale(
+        scale: scale,
+        child: containerChild,
+      );
+    }
   }
 
   @override

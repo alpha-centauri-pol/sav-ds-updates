@@ -60,6 +60,8 @@ class SegmentedControl extends StatelessWidget {
     this.size = SegmentedControlSize.md,
     this.content = SegmentedControlContent.text,
     this.isFullWidth = true,
+    this.enableSurface = true,
+    this.enableSelectionAnimation = true,
   });
 
   final List<SegmentedItem> items;
@@ -69,6 +71,8 @@ class SegmentedControl extends StatelessWidget {
   final SegmentedControlSize size;
   final SegmentedControlContent content;
   final bool isFullWidth;
+  final bool enableSurface;
+  final bool enableSelectionAnimation;
 
   Widget _buildSegmentChild(
     BuildContext context,
@@ -88,14 +92,14 @@ class SegmentedControl extends StatelessWidget {
         spacing: AppSpacing.sm, // 6
         children: [
           TweenAnimationBuilder<Color?>(
-            duration: AppMotion.duration(context, const Duration(milliseconds: 220)),
+            duration: enableSelectionAnimation ? AppMotion.duration(context, const Duration(milliseconds: 220)) : Duration.zero,
             curve: springCurve,
             tween: ColorTween(end: fgColor),
             builder: (context, color, child) =>
                 Icon(item.icon, size: tokens.iconSize, color: color),
           ),
           AnimatedDefaultTextStyle(
-            duration: AppMotion.duration(context, const Duration(milliseconds: 220)),
+            duration: enableSelectionAnimation ? AppMotion.duration(context, const Duration(milliseconds: 220)) : Duration.zero,
             curve: springCurve,
             style: (isSelected ? AppTextStyles.bodyBold : AppTextStyles.bodyRegular)
                 .copyWith(fontSize: tokens.fontSize, color: fgColor),
@@ -105,7 +109,7 @@ class SegmentedControl extends StatelessWidget {
       );
     } else if (hasIcon) {
       return TweenAnimationBuilder<Color?>(
-        duration: AppMotion.duration(context, const Duration(milliseconds: 220)),
+        duration: enableSelectionAnimation ? AppMotion.duration(context, const Duration(milliseconds: 220)) : Duration.zero,
         curve: springCurve,
         tween: ColorTween(end: fgColor),
         builder: (context, color, child) =>
@@ -117,7 +121,7 @@ class SegmentedControl extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           AnimatedDefaultTextStyle(
-            duration: AppMotion.duration(context, const Duration(milliseconds: 220)),
+            duration: enableSelectionAnimation ? AppMotion.duration(context, const Duration(milliseconds: 220)) : Duration.zero,
             curve: springCurve,
             style: (isSelected ? AppTextStyles.bodyBold : AppTextStyles.bodyRegular)
                 .copyWith(fontSize: tokens.fontSize, color: fgColor),
@@ -126,7 +130,7 @@ class SegmentedControl extends StatelessWidget {
           if (item.subtitle != null) ...[
             const SizedBox(height: 2),
             AnimatedDefaultTextStyle(
-              duration: AppMotion.duration(context, const Duration(milliseconds: 220)),
+              duration: enableSelectionAnimation ? AppMotion.duration(context, const Duration(milliseconds: 220)) : Duration.zero,
               curve: springCurve,
               style: AppTextStyles.captionRegular.copyWith(
                 fontSize: tokens.fontSize - 2,
@@ -186,9 +190,12 @@ class SegmentedControl extends StatelessWidget {
     return Container(
       height: tokens.height,
       padding: const EdgeInsets.all(AppSpacing.sm), // 4
-      decoration: SavSurface(
+      decoration: enableSurface ? SavSurface(
         curvature: tokens.curvature,
         fillColor: AppColors.darkTransparent4,
+      ) : BoxDecoration(
+        borderRadius: BorderRadius.circular(tokens.curvature.toDouble()),
+        color: AppColors.darkTransparent4,
       ),
       child: ClipPath(
         clipper: ShapeBorderClipper(
@@ -205,18 +212,21 @@ class SegmentedControl extends StatelessWidget {
             Positioned.fill(
               child: AnimatedAlign(
                 alignment: Alignment(alignValue, 0),
-                duration: AppMotion.duration(context, const Duration(milliseconds: 220)),
+                duration: enableSelectionAnimation ? AppMotion.duration(context, const Duration(milliseconds: 220)) : Duration.zero,
                 curve: springCurve,
                 child: FractionallySizedBox(
                   widthFactor: items.isNotEmpty ? (1.0 / items.length) : 1.0,
                   heightFactor: 1,
                   child: Container(
-                    decoration: SavSurface(
+                    decoration: enableSurface ? SavSurface(
                       curvature: tokens.curvature - 1,
                       fillColor: Colors.white,
                       dropShadowColor: Colors.black.withValues(alpha: 0.08),
                       dropShadowOffset: const Offset(0, 2),
                       dropShadowBlur: 2,
+                    ) : BoxDecoration(
+                      borderRadius: BorderRadius.circular((tokens.curvature - 1).toDouble()),
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -252,7 +262,7 @@ class SegmentedControl extends StatelessWidget {
             height: 2,
             child: AnimatedAlign(
               alignment: Alignment(alignValue, 0),
-              duration: AppMotion.duration(context, const Duration(milliseconds: 220)),
+              duration: enableSelectionAnimation ? AppMotion.duration(context, const Duration(milliseconds: 220)) : Duration.zero,
               curve: springCurve,
               child: FractionallySizedBox(
                 widthFactor: items.isNotEmpty ? (1.0 / items.length) : 1.0,

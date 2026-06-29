@@ -24,6 +24,8 @@ class AppButton extends StatefulWidget {
     this.labelColor,
     this.strokeColor,
     this.textStyle,
+    this.shadows = true,
+    this.showNoise = true,
   });
 
   final String label;
@@ -39,6 +41,8 @@ class AppButton extends StatefulWidget {
   final Color? labelColor;
   final Color? strokeColor;
   final TextStyle? textStyle;
+  final bool shadows;
+  final bool showNoise;
 
   @override
   State<AppButton> createState() => _AppButtonState();
@@ -181,17 +185,17 @@ class _AppButtonState extends State<AppButton>
             ? LinearGradient(colors: [resolvedStrokeColor, resolvedStrokeColor])
             : (style.strokeGradient ?? AppButtonTokens.primaryStrokeGradient),
         strokeSoftLight: true,
-        shadows: style.shadows,
+        shadows: widget.shadows ? style.shadows : null,
       ),
       AppButtonVariant.secondary => SavSurface(
         curvature: style.curvature,
         fillColor: resolvedFillColor ?? Colors.white,
         strokeColor: resolvedStrokeColor ?? AppColors.hairline,
         strokeWidth: style.strokeWidth,
-        dropShadowColor: AppColors.transparent4,
+        dropShadowColor: widget.shadows ? AppColors.transparent4 : Colors.transparent,
         dropShadowOffset: const Offset(1, 1),
         dropShadowBlur: 1.5,
-        innerShadowColor: AppColors.transparent6,
+        innerShadowColor: widget.shadows ? AppColors.transparent6 : Colors.transparent,
         innerShadowOffset: const Offset(-1, -1),
         innerShadowBlur: 1.5,
       ),
@@ -211,7 +215,7 @@ class _AppButtonState extends State<AppButton>
 
     return RepaintBoundary(
       child: NoiseLayer(
-        enabled: style.noiseEnabled,
+        enabled: style.noiseEnabled && widget.showNoise,
         opacity: style.noiseOpacity,
         scale: style.noiseScale,
         curvature: style.curvature,
@@ -229,6 +233,16 @@ class _AppButtonState extends State<AppButton>
                 duration: AppMotion.duration(context, AppMotion.durationHigh),
                 switchInCurve: AppMotion.curveOut,
                 switchOutCurve: AppMotion.curveGentleOut,
+                layoutBuilder: (currentChild, previousChildren) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: <Widget>[
+                      ...previousChildren,
+                      if (currentChild != null) currentChild,
+                    ],
+                  );
+                },
                 transitionBuilder: (child, animation) {
                   final isEntering = child.key == const ValueKey('loading');
                   return FadeTransition(

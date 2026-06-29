@@ -17,6 +17,8 @@ class SelectableRow extends StatefulWidget {
     this.divider = true,
     this.state = SelectableRowState.normal,
     this.leadingWidget,
+    this.animateSelection = true,
+    this.enableFlash = true,
   });
 
   final String label;
@@ -27,6 +29,8 @@ class SelectableRow extends StatefulWidget {
   final bool divider;
   final SelectableRowState state;
   final Widget? leadingWidget;
+  final bool animateSelection;
+  final bool enableFlash;
 
   @override
   State<SelectableRow> createState() => _SelectableRowState();
@@ -70,7 +74,7 @@ class _SelectableRowState extends State<SelectableRow>
 
   void _handleTap() {
     if (widget.state != SelectableRowState.disabled) {
-      if (!AppMotion.reduce(context)) {
+      if (!AppMotion.reduce(context) && widget.enableFlash) {
         _flashController.forward(from: 0);
       }
       widget.onTap?.call();
@@ -78,6 +82,18 @@ class _SelectableRowState extends State<SelectableRow>
   }
 
   Widget _buildCheckmarkIndicator(BuildContext context) {
+    if (!widget.animateSelection) {
+      return SizedBox(
+        width: 20,
+        height: 20,
+        child: CustomPaint(
+          painter: CheckmarkPainter(
+            progress: widget.selected ? 1.0 : 0.0,
+            color: AppColors.obsidian,
+          ),
+        ),
+      );
+    }
     return TweenAnimationBuilder<double>(
       duration: AppMotion.duration(context, AppMotion.durationHigh),
       curve: AppMotion.curveOut,
@@ -98,6 +114,29 @@ class _SelectableRowState extends State<SelectableRow>
   }
 
   Widget _buildRadioDotIndicator(BuildContext context) {
+    if (!widget.animateSelection) {
+      return Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: widget.selected ? AppColors.obsidian : AppColors.hairline,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: widget.selected ? Container(
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(
+              color: AppColors.obsidian,
+              shape: BoxShape.circle,
+            ),
+          ) : const SizedBox.shrink(),
+        ),
+      );
+    }
     return AnimatedContainer(
       duration: AppMotion.duration(context, AppMotion.durationHigh),
       curve: AppMotion.curveOut,
@@ -189,7 +228,7 @@ class _SelectableRowState extends State<SelectableRow>
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,
       onTap: isDisabled ? null : _handleTap,
-      child: AnimatedBuilder(
+      child: widget.enableFlash ? AnimatedBuilder(
         animation: _flashController,
         builder: (context, child) {
           final flashOpacity = _flashAnimation.value * 0.08;
@@ -214,6 +253,20 @@ class _SelectableRowState extends State<SelectableRow>
             child: child,
           );
         },
+        child: rowContent,
+      ) : Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: _isPressed ? AppColors.darkTransparent4 : Colors.transparent,
+          border: widget.divider
+              ? const Border(
+                  bottom: BorderSide(
+                    color: AppColors.hairline,
+                  ),
+                )
+              : null,
+        ),
         child: rowContent,
       ),
     );

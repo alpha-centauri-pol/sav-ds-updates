@@ -272,7 +272,7 @@ class _InputFieldState extends State<InputField>
     }
 
     return Padding(
-      padding: const EdgeInsets.only(left: 10, right: 12),
+      padding: const EdgeInsets.only(left: 6, right: 12),
       child: squircle,
     );
   }
